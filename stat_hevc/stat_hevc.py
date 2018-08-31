@@ -9,8 +9,8 @@ class stat_hevc(object):
 
         self.parse_result(filename)
 
-        # generate table from list_poc, list_summary
-        self.df_poc = pd.DataFrame(self.list_poc)
+        # generate table from list_frame, list_summary
+        self.df_frame = pd.DataFrame(self.list_frame)
         self.df_summary = pd.DataFrame(self.list_summary)
 
         # make the table minimal. just essential part.
@@ -21,18 +21,26 @@ class stat_hevc(object):
         # calculate bitrate from bits and fps
 
         # gen id : video + qp
+        self.df_frame['name'] = self.video_name
+        self.df_frame['qp'] = self.qp
+
+        self.df_summary['name'] = self.video_name
+        self.df_summary['qp'] = self.qp
+
         # add id to table
+        self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
+        self.df_summary['id'] = self.df_summary['name'] + '_QP' + self.df_summary['qp']
 
 
-    def get_poc(self):
-        return self.df_poc
+    def get_frame_table(self):
+        return self.df_frame
 
-    def get_summary(self):
+    def get_summary_table(self):
         return self.df_summary
 
     def parse_result(self, filename):
         try:
-            self.list_poc = []
+            self.list_frame = []
             self.list_summary = []
 
             with open(filename) as data:
@@ -44,6 +52,7 @@ class stat_hevc(object):
                     if 'Input          File' in each_line:
                         (text, video_name) = each_line.rsplit('/', 1)
                         (video_name, text) = video_name.split('.', 1)
+                        _, video_name = video_name.split('vcnn_down_', 1)
 
                         self.video_name = video_name
 
@@ -52,7 +61,7 @@ class stat_hevc(object):
                             (text, qp_str) = each_line.split(':', 1)
                             (qp, text) = qp_str.split('.', 1)
 
-                            self.qp = qp
+                            self.qp = qp.strip()
 
                     if 'Real     Format' in each_line:
                         list_numbers= re.findall('[.0-9]+', each_line)
@@ -83,7 +92,7 @@ class stat_hevc(object):
                         list_numbers = re.findall('[.0-9]+', each_line)
 
                         list_poc_line = [slice_type] + list_numbers
-                        self.list_poc.append(list_poc_line)
+                        self.list_frame.append(list_poc_line)
 
         except IOError as err:
             print('File error'+str(err))
@@ -91,16 +100,16 @@ class stat_hevc(object):
     def make_poc_minimal(self):
 
         # select essential columns : 0, 1, 3, 5, 6, 7, 8
-        self.df_poc = self.df_poc[[0, 1, 3, 5, 6, 7, 8]]
+        self.df_frame = self.df_frame[[0, 1, 3, 5, 6, 7, 8]]
 
         # add column name
-        self.df_poc.columns = ['slice_type', 'poc', 'qp', 'bits', 'psnr_y', 'psnr_u', 'psnr_v']
+        self.df_frame.columns = ['slice_type', 'frm', 'qp', 'bits', 'psnr_y', 'psnr_u', 'psnr_v']
 
         # type change
-        self.df_poc['bits'] = self.df_poc['bits'].astype(float)
+        self.df_frame['bits'] = self.df_frame['bits'].astype(float)
 
         # add bitrate
-        self.df_poc['bitrate'] = self.df_poc['bits'] * self.fps / 1000
+        self.df_frame['bitrate'] = self.df_frame['bits'] * self.fps / 1000
 
     def make_summary_minimal(self):
         # add column name
