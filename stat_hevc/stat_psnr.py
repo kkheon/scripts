@@ -25,7 +25,10 @@ class stat_psnr(object):
 
         path, name = filename.rsplit('/', 1)
         name, _ = name.split('.', 1)
-        _, name = name.split('vcnn_down_', 1)
+        if 'vcnn_down_' in name:
+          _, name = name.split('vcnn_down_', 1)
+        else:
+          _, name = name.split('rec_', 1)
 
         self.video_name = name
 

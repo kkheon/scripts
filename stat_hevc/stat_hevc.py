@@ -68,7 +68,8 @@ class stat_hevc(object):
                     if 'Input          File' in each_line:
                         (text, video_name) = each_line.rsplit('/', 1)
                         (video_name, text) = video_name.split('.', 1)
-                        _, video_name = video_name.split('vcnn_down_', 1)
+                        if 'vcnn_down_' in video_name:
+                          _, video_name = video_name.split('vcnn_down_', 1)
 
                         self.video_name = video_name
 
