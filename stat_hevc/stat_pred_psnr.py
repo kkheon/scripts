@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import numpy as np
 
-class stat_psnr(object):
+class stat_pred_psnr(object):
 
     def __init__(self, filename):
 
@@ -16,7 +16,8 @@ class stat_psnr(object):
 
         # add id to table
         #self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-        self.df_frame['id'] = 'loop_'+ str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
+        #self.df_frame['id'] = 'loop_'+ str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
+        self.df_frame['id'] = 'loop_'+ str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp']
 
     def get_frame_table(self):
         return self.df_frame
@@ -25,14 +26,11 @@ class stat_psnr(object):
 
         path, name = filename.rsplit('/', 1)
         name, _ = name.split('.', 1)
-        _, name = name.split('vcnn_down_', 1)
-
-        self.video_name = name
 
         list_numbers = re.findall('up_[0-9]+', path)
         _, self.loop_idx = list_numbers[0].split('_', 1)
 
-        _, qp = path.rsplit('QP', 1)
+        _, qp = name.rsplit('QP', 1)
         self.qp = qp
 
 
@@ -44,19 +42,23 @@ class stat_psnr(object):
         data = f.readlines()
 
         for each_line in data:
-            if 'Frm' in each_line:
+            if 'label' in each_line:
                 list_numbers = re.findall('[.0-9]+', each_line)
-                self.list_frame.append(list_numbers)
+                vsr_psnr = list_numbers[-1]
+
+                # filename
+                each_label, each_input, _ = each_line.split(',', 2)
+                _, filename = each_label.split('/', 1)
+                filename, _ = filename.split('.', 1)
+
+                self.list_frame.append([filename, vsr_psnr])
 
         f.close()
 
         # generate table from list_frame, list_summary
         self.df_frame = pd.DataFrame(self.list_frame)
 
-        # select essential columns
-        self.df_frame = self.df_frame[[0, 2, 4]]
-
         # add column name
-        self.df_frame.columns = ['frm', 'psnr_y_up', 'ssim_up']
+        self.df_frame.columns = ['name', 'psnr_y_up']
 
 

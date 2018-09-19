@@ -2,8 +2,11 @@
 import os
 import glob
 import pandas as pd
+import re
+
 from stat_hevc import stat_hevc
 from stat_psnr import stat_psnr
+from stat_pred_psnr import stat_pred_psnr
 
 
 if __name__ == '__main__':
@@ -12,20 +15,20 @@ if __name__ == '__main__':
         #'/home/kkheon/VCNN-Tensorflow/data_vsr/val'
     ]
 
-    # temp-down
-    filename = '/hdd2T/kkheon/result_mf_vcnn/v2_qp32_bugfixed/result_mf_vcnn_down_hm/QP32/result_mf_vcnn_down_scene_53.txt'
-    stat_scene_53 = stat_hevc(filename)
+    ## temp-down
+    #filename = '/hdd2T/kkheon/result_mf_vcnn/v2_qp32_bugfixed/result_mf_vcnn_down_hm/QP32/result_mf_vcnn_down_scene_53.txt'
+    #stat_scene_53 = stat_hevc(filename)
 
-    poc_53 = stat_scene_53.get_frame_table()
-    print(poc_53)
-    summary_53 = stat_scene_53.get_summary_table()
-    print(summary_53)
+    #poc_53 = stat_scene_53.get_frame_table()
+    #print(poc_53)
+    #summary_53 = stat_scene_53.get_summary_table()
+    #print(summary_53)
 
-    # temp-up
-    filename = '/hdd2T/kkheon/result_mf_vcnn/v2_qp32_bugfixed/result_mf_vcnn_up_frm5_g3/QP32/psnr_rec_mf_vcnn_down_scene_53.txt'
-    stat_up = stat_psnr(filename)
-    df_up = stat_up.get_frame_table()
-    print(df_up)
+    ## temp-up
+    #filename = '/hdd2T/kkheon/result_mf_vcnn/v2_qp32_bugfixed/result_mf_vcnn_up_frm5_g3/QP32/psnr_rec_mf_vcnn_down_scene_53.txt'
+    #stat_up = stat_psnr(filename)
+    #df_up = stat_up.get_frame_table()
+    #print(df_up)
 
 
     # temp total
@@ -42,6 +45,7 @@ if __name__ == '__main__':
         #'/home/kkheon/MF-VCNN-Tensorflow/data_vsr/val/v2_qp32'
 
         '/hdd2T/kkheon/result_mf_vcnn/v2_qp32_bugfixed'
+        #'/hdd2T/kkheon/data_vsr_bak/val/v7_qp32'
     ]
 
     list_qp = [
@@ -51,23 +55,53 @@ if __name__ == '__main__':
        #,'QP47'
     ]
 
-    for each_dir in list_dir:
-        for each_qp in list_qp:
-            #path = os.path.join(each_dir, 'result_' + each_qp)
-            path = each_dir
+    #
+    run_multi_frame = True
 
-            #target_dir = 'result_mf_vcnn_down_*_hm/'
-            #target_dir = 'result_vcnn_down*_hm/QP*'
-            target_dir = 'result_mf_vcnn_down*_hm/QP*'
-            target_path = os.path.join(path, target_dir)
+    for each_qp in list_qp:
+        if run_multi_frame:
+            path_prefix = ""
+            down_dir_name = 'result_mf_vcnn_down*_hm/QP*'
+            down_filename = "result_mf_vcnn_down_*.txt"
+
+            #down_dir_name = 'result_mf_vcnn_down*_hm'
+            #down_filename = each_qp + "/result_mf_vcnn_down_*.txt"
+
+            # multi-frame-run
+            # path : /hdd2T/kkheon/result_mf_vcnn/v2_qp32_bugfixed/result_mf_vcnn_up_frm5_g3/QP32
+            # file : psnr_rec_mf_vcnn_down_scene_53.txt
+            up_dir_name = 'result_mf_vcnn_up_*/QP*'
+            up_filename = "psnr_*" + ".txt"
+            #up_dir_name = 'result_mf_vcnn_up_*'
+            #up_filename = "vsr_pred_psnr_" + each_qp + ".txt"
+        else:
+            path_prefix = 'result_' + each_qp
+
+            # TODO : check if running
+            # val_myanmar
+            # path : result_QP32/result_mf_vcnn_down_3_hm/QP32
+            # filename : result_mf_vcnn_down_scene_53.txt
+            down_dir_name = 'result_mf_vcnn_down*_hm/QP*'
+            down_filename = 'result_mf_vcnn_down_*.txt'
+
+            # val_myanmar
+            # path : result_QP32/result_mf_vcnn_up_4
+            # file : ... just average file. not for each file.
+            up_dir_name = 'result_mf_vcnn_up_*/QP*'
+            up_filename = "psnr_*" + ".txt"
+
+        for each_dir in list_dir:
+            #path = os.path.join(each_dir, 'result_' + each_qp)
+            #path = each_dir
+            path = os.path.join(each_dir, path_prefix)
+
+            # ========== down-sampled bitrate ========== #
+            target_path = os.path.join(path, down_dir_name)
             list_sub_dir = sorted(glob.glob(target_path))
 
             df_down = pd.DataFrame()
             for each_sub_dir in list_sub_dir:
-                #list_txt = sorted(glob.glob(os.path.join(each_sub_dir, each_qp, "result_mf_vcnn_down_*.txt")))
-                #list_txt = sorted(glob.glob(os.path.join(each_sub_dir, each_qp, "result_vcnn_down_*.txt")))
-                #list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "result_vcnn_down_*.txt")))
-                list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "result_mf_vcnn_down_*.txt")))
+                list_txt = sorted(glob.glob(os.path.join(each_sub_dir, down_filename)))
 
                 for each_txt in list_txt:
                     each_stat = stat_hevc(each_txt)
@@ -75,20 +109,13 @@ if __name__ == '__main__':
                     each_frame_table = each_stat.get_frame_table()
                     df_down = df_down.append(each_frame_table)
 
-                    #target_poc_stat = each_stat[['poc' == target_poc]]
-
-
-            #target_dir = 'result_mf_vcnn_up_*/'
-            #target_dir = 'result_vcnn_up_*/QP*'
-            target_dir = 'result_mf_vcnn_up_*/QP*'
-            target_path = os.path.join(path, target_dir)
+            # ========== up-sampled PSNR ========== #
+            target_path = os.path.join(path, up_dir_name)
             list_sub_dir = sorted(glob.glob(target_path))
 
             df_up = pd.DataFrame()
             for each_sub_dir in list_sub_dir:
-                #list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "vsr_pred_psnr_" + each_qp + ".txt")))
-                list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "psnr_*" + ".txt")))
-
+                list_txt = sorted(glob.glob(os.path.join(each_sub_dir, up_filename)))
                 for each_txt in list_txt:
                     each_stat = stat_psnr(each_txt)
 
@@ -97,7 +124,16 @@ if __name__ == '__main__':
 
             ### merge
             df_merged = pd.merge(df_down, df_up, on='id', how='outer')
-            print(df_merged)
+            #print(df_merged)
+
+            df_merged = df_merged[['name_x', 'frm_x', 'qp_x', 'bitrate', 'psnr_y_up', 'ssim_up']]
+            df_merged = df_merged.sort_values(['name_x', 'frm_x', 'qp_x'])
+
+            #df_merged.to_csv(r'/home/kkheon/VCNN-Tensorflow/data_vsr/val/df_merged.txt', header=None, index=None, sep=' ')
+
+            filename_merged = os.path.join(each_dir, 'df_merged.txt')
+            #df_merged.to_csv(filename_merged, header=None, index=None, sep=' ')
+            df_merged.to_csv(filename_merged, index=None, sep=' ')
 
 
 

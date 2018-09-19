@@ -7,6 +7,7 @@ class stat_hevc(object):
 
     def __init__(self, filename):
 
+        self.parse_filename(filename)
         self.parse_result(filename)
 
         # generate table from list_frame, list_summary
@@ -28,8 +29,10 @@ class stat_hevc(object):
         self.df_summary['qp'] = self.qp
 
         # add id to table
-        self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-        self.df_summary['id'] = self.df_summary['name'] + '_QP' + self.df_summary['qp']
+        #self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
+        #self.df_summary['id'] = self.df_summary['name'] + '_QP' + self.df_summary['qp']
+        self.df_frame['id'] = 'loop_' + str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
+        self.df_summary['id'] = 'loop_' + str(self.loop_idx) + '_' + self.df_summary['name'] + '_QP' + self.df_summary['qp']
 
 
     def get_frame_table(self):
@@ -37,6 +40,16 @@ class stat_hevc(object):
 
     def get_summary_table(self):
         return self.df_summary
+
+    def parse_filename(self, filename):
+
+        path, name = filename.rsplit('/', 1)
+        list_numbers = re.findall('down_[0-9]+', path)
+        if list_numbers:
+            _, loop_idx = list_numbers[0].split('_', 1)
+            self.loop_idx = int(loop_idx) + 1
+        else:
+            self.loop_idx = 1
 
     def parse_result(self, filename):
         try:
