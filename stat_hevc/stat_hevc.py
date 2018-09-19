@@ -34,6 +34,9 @@ class stat_hevc(object):
         self.df_frame['id'] = 'loop_' + str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
         self.df_summary['id'] = 'loop_' + str(self.loop_idx) + '_' + self.df_summary['name'] + '_QP' + self.df_summary['qp']
 
+        # add loop to table
+        self.df_frame['loop'] = self.loop_idx
+        self.df_summary['loop'] = self.loop_idx
 
     def get_frame_table(self):
         return self.df_frame

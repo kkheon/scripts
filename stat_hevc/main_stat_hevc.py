@@ -126,9 +126,9 @@ if __name__ == '__main__':
             df_merged = pd.merge(df_down, df_up, on='id', how='outer')
             #print(df_merged)
 
-            df_merged = df_merged[['name_x', 'frm_x', 'qp_x', 'bitrate', 'psnr_y_up', 'ssim_up']]
-            df_merged.columns = ['name', 'frm', 'qp', 'bitrate', 'psnr_y_up', 'ssim_up']
-            df_merged = df_merged.sort_values(['name', 'frm', 'qp'])
+            df_merged = df_merged[['loop', 'name_x', 'frm_x', 'qp_x', 'bitrate', 'psnr_y_up', 'ssim_up']]
+            df_merged.columns = ['loop', 'name', 'frm', 'qp', 'bitrate', 'psnr_y_up', 'ssim_up']
+            df_merged = df_merged.sort_values(['loop', 'name', 'frm', 'qp'])
 
             #df_merged.to_csv(r'/home/kkheon/VCNN-Tensorflow/data_vsr/val/df_merged.txt', header=None, index=None, sep=' ')
 
@@ -143,7 +143,7 @@ if __name__ == '__main__':
             df_frame_level = df_merged.groupby(['frm', 'qp']).mean()
 
             # to_file
-            filename_merged = os.path.join(each_dir, 'df_avg_frame.txt')
+            filename_merged = os.path.join(each_dir, 'df_frame_avg.txt')
             df_frame_level.to_csv(filename_merged, sep=' ')
 
 
@@ -151,7 +151,7 @@ if __name__ == '__main__':
             df_video_level = df_merged.groupby(['name', 'qp']).mean()
 
             # to_file
-            filename_merged = os.path.join(each_dir, 'df_avg_video.txt')
+            filename_merged = os.path.join(each_dir, 'df_video_avg.txt')
             df_video_level.to_csv(filename_merged, sep=' ')
 
 
