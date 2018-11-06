@@ -18,6 +18,11 @@ def yuv_diff(filename_label, frame_label, filename_input, frame_input, w, h, blo
     array_input_y, array_input_cbcr = read_yuv420(filename_input, w, h, 1, start_frame=frame_input)
     input_y = array_input_y.squeeze()
 
+    # calculate MSE in pixel domain
+    # make a copy of pixel domain
+    label_y_pel = label_y.copy()
+    input_y_pel = input_y.copy()
+
     # normalization
     label_y = label_y / 255.
     input_y = input_y / 255.
@@ -27,8 +32,11 @@ def yuv_diff(filename_label, frame_label, filename_input, frame_input, w, h, blo
 
     # loop based on block
     list_psnr_frame = []
+    list_sse_frame = []
     for y in range(0, h, block_size):
         list_psnr_row = []
+        list_sse_row = []
+
         for x in range(0, w, block_size):
 
             # pick block from input
@@ -46,15 +54,25 @@ def yuv_diff(filename_label, frame_label, filename_input, frame_input, w, h, blo
             # save diff as image
             # combine yuv
 
+            # calculate SSE in pixel domain
+            sub_label_y_pel = label_y_pel[y:y+block_size, x:x+block_size]
+            sub_input_y_pel = input_y_pel[y:y+block_size, x:x+block_size]
+
+            # SSE
+            each_sse = np.sum((sub_label_y_pel - sub_input_y_pel) ** 2)
+            list_sse_row.append(float("{0:.4f}".format(each_sse)))
+
             block_count += 1
 
         list_psnr_frame.append(list_psnr_row)
+        list_sse_frame.append(list_sse_row)
 
     # outside of the loop
 
     # stat the block-level PSNR
     # list_psnr to df
     df_psnr = pd.DataFrame(list_psnr_frame)
+    df_sse = pd.DataFrame(list_sse_frame)
 
 
-    return df_psnr
+    return df_psnr, df_sse

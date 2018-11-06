@@ -42,7 +42,7 @@ if __name__ == '__main__':
         each_label = list_label[idx]
         each_input = list_input[idx]
 
-        df_psnr = yuv_diff(each_label, frame_label, each_input, frame_input, w, h, block_size, scale)
+        df_psnr, df_sse = yuv_diff(each_label, frame_label, each_input, frame_input, w, h, block_size, scale)
 
         # parsing filename
         _, in_filename = each_image.rsplit('/', 1)
