@@ -6,16 +6,16 @@ from psnr import psnr
 
 from skimage.measure import compare_ssim as ssim
 
-def yuv_diff(filename_label, frame_label, filename_input, frame_input, w, h, block_size, scale):
+def yuv_diff(filename_label, start_frame_label, filename_input, start_frame_input, w, h, block_size, scale):
 
-    print("========== FRM : label=%03d, input=%03d ==========\n" % (frame_label, frame_input))
+    print("========== FRM : label=%03d, input=%03d ==========\n" % (start_frame_label, start_frame_input))
 
     # read yuv : label
-    array_label_y, array_label_cbcr = read_yuv420(filename_label, w, h, 1, start_frame=frame_label)
+    array_label_y, array_label_cbcr = read_yuv420(filename_label, w, h, 1, start_frame=start_frame_label)
     label_y = array_label_y.squeeze()
 
     # read yuv : input
-    array_input_y, array_input_cbcr = read_yuv420(filename_input, w, h, 1, start_frame=frame_input)
+    array_input_y, array_input_cbcr = read_yuv420(filename_input, w, h, 1, start_frame=start_frame_input)
     input_y = array_input_y.squeeze()
 
     # calculate MSE in pixel domain
