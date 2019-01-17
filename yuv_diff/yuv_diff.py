@@ -75,4 +75,4 @@ def yuv_diff(filename_label, start_frame_label, filename_input, start_frame_inpu
     df_sse = pd.DataFrame(list_sse_frame)
 
 
-    return df_psnr, df_sse
+    return df_psnr, df_sse, label_y_pel, input_y_pel
