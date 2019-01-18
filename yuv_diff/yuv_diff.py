@@ -76,3 +76,60 @@ def yuv_diff(filename_label, start_frame_label, filename_input, start_frame_inpu
 
 
     return df_psnr, df_sse, label_y_pel, input_y_pel
+
+
+def yuv_diff_temporal(filename_input, start_frame_input, w, h, frame_size, block_size, scale):
+
+    # read yuv : input
+    array_input_y, array_input_cbcr = read_yuv420(filename_input, w, h, frame_size, start_frame=start_frame_input)
+    input_y = array_input_y.squeeze()
+
+    # make a copy of pixel domain
+    input_y_pel = input_y.copy()
+
+    # normalization
+    input_y = input_y / 255.
+
+    # count for each frame
+    block_count = 0
+
+    # loop based on block
+    list_df_psnr = []
+    list_df_ssim = []
+    for frame_index in range(1, frame_size):
+        list_psnr_frame = []
+        list_ssim_frame = []
+        for y in range(0, h, block_size):
+            list_psnr_row = []
+            list_ssim_row = []
+
+            for x in range(0, w, block_size):
+
+                # pick block from input
+                sub_input_y_prev = input_y[frame_index-1, y:y+block_size, x:x+block_size]
+                sub_input_y_curr = input_y[frame_index,   y:y+block_size, x:x+block_size]
+
+                # PSNR calculation
+                each_psnr = psnr(sub_input_y_prev, sub_input_y_curr, scale)
+                each_ssim = ssim(sub_input_y_prev, sub_input_y_curr, data_range=1)
+
+                list_psnr_row.append(float("{0:.4f}".format(each_psnr)))
+                list_ssim_row.append(float("{0:.4f}".format(each_ssim)))
+
+                block_count += 1
+
+            list_psnr_frame.append(list_psnr_row)
+            list_ssim_frame.append(list_ssim_row)
+
+        # outside of the loop
+
+        # stat the block-level PSNR
+        # list_psnr to df
+        df_psnr = pd.DataFrame(list_psnr_frame)
+        df_ssim = pd.DataFrame(list_ssim_frame)
+
+        # append to list
+        list_df_psnr.append(df_psnr)
+        list_df_ssim.append(df_ssim)
+
+    return list_df_psnr, list_df_ssim, input_y_pel
