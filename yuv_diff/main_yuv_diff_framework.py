@@ -119,4 +119,3 @@ if __name__ == '__main__':
                 plot_ssim_diff(result_imgs, psnrs, ssims, bitrates, xlabels, idx, x, y, save_dir=output_path_psnr)
 
 
-

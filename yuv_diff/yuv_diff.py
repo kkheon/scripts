@@ -84,11 +84,14 @@ def yuv_diff_temporal(filename_input, start_frame_input, w, h, frame_size, block
     array_input_y, array_input_cbcr = read_yuv420(filename_input, w, h, frame_size, start_frame=start_frame_input)
     input_y = array_input_y.squeeze()
 
-    # make a copy of pixel domain
-    input_y_pel = input_y.copy()
+    ## make a copy of pixel domain
+    #input_y_pel = input_y.copy()
 
     # normalization
     input_y = input_y / 255.
+
+    # make a copy of pixel domain
+    input_y_pel = input_y.copy()
 
     # count for each frame
     block_count = 0
