@@ -15,6 +15,7 @@ from utils import plot_psnr_diff
 from utils import plot_ssim_diff
 from utils import plot_framework_diff
 from utils import parse_dec_bit_lcu
+from utils import draw_scatter_plot_from_df
 
 from read_yuv import read_yuv420
 
@@ -105,20 +106,27 @@ if __name__ == '__main__':
         bit_filename = '/home/kkheon/scripts/yuv_diff/dec/dec_lr/decoder_bit_lcu.txt'
         df_bit_lcu_lr = parse_dec_bit_lcu(bit_filename)
 
+
+        # dataframe for diff-scatter plot
+        list_columns = ['img_idx', 'frame_idx', 'x', 'y', 'bit_diff', 'psnr_diff']
+        #df_diff = pd.DataFrame(columns=['img_idx', 'frame_idx', 'x', 'y', 'bit_diff', 'psnr_diff'])
+
         # save block-image
         w_in_block = int(w / block_size)
-        for y in range(0, h, block_size):
-            for x in range(0, w, block_size):
-                # block index
-                y_up = int(y * 2)
-                x_up = int(x * 2)
+        for each_frame_index in range(0, frame_size):
+            df_diff_frm = pd.DataFrame(columns=list_columns)
+            for y in range(0, h, block_size):
+                for x in range(0, w, block_size):
+                    # block index
+                    y_up = int(y * 2)
+                    x_up = int(x * 2)
 
-                # block index
-                y_in_block = int(y / block_size)
-                x_in_block = int(x / block_size)
+                    # block index
+                    y_in_block = int(y / block_size)
+                    x_in_block = int(x / block_size)
 
-                # get psnr, ssim value
-                for each_frame_index in range(0, frame_size):
+                    # get psnr, ssim value
+                    #for each_frame_index in range(0, frame_size):
                     psnrs = [None, None, None]  # label, lr, enc(lr)
                     ssims = [None, None, None]
 
@@ -185,14 +193,62 @@ if __name__ == '__main__':
 
                     if math.isinf(psnr_diff):
                         psnr_diff = 99.0
-                    psnr_diff_floor = math.floor(psnr_diff)
-                    str_psnr_diff_floor = str(psnr_diff_floor)
-                    output_path_psnr = os.path.join(output_path, 'group_psnr_' + str_psnr_diff_floor)
 
-                    if not os.path.exists(output_path_psnr):
-                        os.makedirs(output_path_psnr)
+                    #psnr_diff_floor = math.floor(psnr_diff)
+                    #str_psnr_diff_floor = str(psnr_diff_floor)
+                    #output_path_psnr = os.path.join(output_path, 'group_psnr_' + str_psnr_diff_floor)
 
-                    #plot_psnr_diff(result_imgs, psnrs, idx, x, y, save_dir=output_path_psnr)
-                    plot_framework_diff(result_imgs, psnrs, bitrates, xlabels, idx, x, y, save_dir=output_path_psnr)
+                    #if not os.path.exists(output_path_psnr):
+                    #    os.makedirs(output_path_psnr)
 
+                    # bitrate rate
+                    if bitrates[4] == 0:
+                        if bitrates[3] == 0:
+                            bitrate_diff_rate = 0.0
+                        else:
+                            bitrate_diff_rate = 1.0
+                    else:
+                        bitrate_diff_rate = (bitrates[4] - bitrates[3]) / bitrates[4]  # (bitrates(HM) - bitrates(LR+HM+UP)) / bitrates(HM)
+
+                    bitrate_diff_rate_format = float("{0:.1f}".format(bitrate_diff_rate))
+
+                    # categorization
+                    if psnr_diff >= 0:
+                        if bitrate_diff_rate < 0.1:
+                            group_index = '0'
+                        elif bitrate_diff_rate < 0.3:
+                            group_index = '3'
+                        else:
+                            group_index = '6'
+                    elif psnr_diff < -3:
+                        if bitrate_diff_rate < 0.1:
+                            group_index = '2'
+                        elif bitrate_diff_rate < 0.3:
+                            group_index = '5'
+                        else:
+                            group_index = '8'
+                    else:
+                        if bitrate_diff_rate < 0.1:
+                            group_index = '1'
+                        elif bitrate_diff_rate < 0.3:
+                            group_index = '4'
+                        else:
+                            group_index = '7'
+
+                    output_path_group = os.path.join(output_path, 'group_' + group_index)
+
+                    if not os.path.exists(output_path_group):
+                        os.makedirs(output_path_group)
+
+                    plot_framework_diff(result_imgs, psnrs, bitrates, xlabels, idx, each_frame_index, x, y, save_dir=output_path_group)
+
+                    # save to df_diff
+                    list_diff = [[idx, each_frame_index, x, y, bitrate_diff_rate, psnr_diff]]
+                    df_diff_frm = df_diff_frm.append(pd.DataFrame(list_diff, columns=list_columns))
+
+            # after each frame
+
+            # scatter plot
+            scatter_plot_filename = output_path + '/scatter_plot_img_%d_frm_%d' % (idx, each_frame_index)
+            draw_scatter_plot_from_df(scatter_plot_filename, df_diff_frm, 'bit_diff', 'psnr_diff')
 
