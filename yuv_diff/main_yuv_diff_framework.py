@@ -23,6 +23,10 @@ import math
 
 
 if __name__ == '__main__':
+    # options
+    #do_plot_framework_diff = True
+    do_plot_framework_diff = False
+
     # settings
     label_path = "./data_vsr/val/label"
     input_path = "./data_vsr/val/label"
@@ -45,18 +49,44 @@ if __name__ == '__main__':
     start_frame = 0
     frame_size = 5
 
+    path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32'
+    path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32'
 
     # input list
+    list_yuv_name = ['scene_53.yuv']
+    #list_yuv_name = sorted(glob.glob(os.path.join(path_label, "*.yuv")))
+
     # input 1 : label, High Resolution(HR)
-    list_label = ['/home/kkheon/dataset/myanmar_v1_15frm/orig/scenes_yuv/val/scene_53.yuv']
+    #list_label = ['/home/kkheon/dataset/myanmar_v1_15frm/orig/scenes_yuv/val/scene_53.yuv']
+    path_label = '/home/kkheon/dataset/myanmar_v1_15frm/orig/scenes_yuv/val'
     # input 2 : HR's HM result
-    list_label_rec = ['/home/kkheon/dataset/myanmar_v1/orig_hm/val/QP32/rec_scene_53.yuv']
+    #list_label_rec = ['/home/kkheon/dataset/myanmar_v1/orig_hm/val/QP32/rec_scene_53.yuv']
+    path_label_rec = '/home/kkheon/dataset/myanmar_v1/orig_hm/val/QP32'
+    prefix_label_rec = 'rec_'
+
     # input 3 : LR
-    list_down = ['/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32/result_mf_vcnn_down_3/mf_vcnn_down_scene_53.yuv']
+    #list_down = ['/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32/result_mf_vcnn_down_3/mf_vcnn_down_scene_53.yuv']
+    path_down = path_target + '/result_mf_vcnn_down_3'
+    prefix_down = 'mf_vcnn_down_'
     # input 4 : LR's HM result
-    list_down_rec = ['/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_down_3_hm/QP32/rec_mf_vcnn_down_scene_53.yuv']
+    #list_down_rec = ['/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_down_3_hm/QP32/rec_mf_vcnn_down_scene_53.yuv']
+    #path_down_rec = '/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_down_3_hm/QP32'
+    path_down_rec = path_down + '_hm/QP32'
+    prefix_down_rec = 'rec_mf_vcnn_down_'
     # input 5 : LR's HM result + up
-    list_down_rec_up = ['/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_up_4/QP32/mf_vcnn_up_rec_mf_vcnn_down_scene_53.yuv']
+    #list_down_rec_up = ['/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_up_4/QP32/mf_vcnn_up_rec_mf_vcnn_down_scene_53.yuv']
+    #path_down_rec_up = '/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_up_4/QP32'
+    path_down_rec_up = path_target + '/result_mf_vcnn_up_4/QP32'
+    prefix_down_rec_up = 'mf_vcnn_up_rec_mf_vcnn_down_'
+
+    # input 6 : LR's decoder_bit_lcu
+    #path_down_dec = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32/result_mf_vcnn_down_3_hm/QP32_dec'
+    path_down_dec = path_down_rec + '_dec'
+    prefix_down_dec = 'decoder_bit_lcu_str_mf_vcnn_down_'
+
+    # input 7 : HR's decoder_bit_lcu
+    path_label_dec = path_label_rec + '_dec'
+    prefix_label_dec = 'decoder_bit_lcu_str_'
 
     ## path setting
     #list_label = sorted(glob.glob(os.path.join(label_path, "*.yuv")))
@@ -72,49 +102,50 @@ if __name__ == '__main__':
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
+    # dataframe for saving raw data
+    list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'bit_down/up', 'psnr_down/up', 'bit_diff', 'psnr_diff']
+    df_raw = pd.DataFrame(columns=list_columns_raw)
+
     # save each image's PSNR result as file.
-    for idx, each_image in enumerate(list_down_rec):
+    for idx, each_yuv in enumerate(list_yuv_name):
 
         # load LR
-        each_down_yuv = list_down_rec[idx]
+        each_down_yuv = os.path.join(path_down, prefix_down + each_yuv)
         array_input_y, array_input_cbcr = read_yuv420(each_down_yuv, w, h, frame_size, start_frame=start_frame)
         input_y_down = array_input_y.squeeze(axis=3)
 
         # load LR+HM
-        each_down_yuv = list_down_rec[idx]
-        array_input_y, array_input_cbcr = read_yuv420(each_down_yuv, w, h, frame_size, start_frame=start_frame)
+        each_down_yuv_rec = os.path.join(path_down_rec, prefix_down_rec + each_yuv)
+        array_input_y, array_input_cbcr = read_yuv420(each_down_yuv_rec, w, h, frame_size, start_frame=start_frame)
         input_y_down_rec = array_input_y.squeeze(axis=3)
 
         # diff label-HM
-        each_label = list_label[idx]
-        each_label_rec = list_label_rec[idx]
+        each_label = os.path.join(path_label, each_yuv)
+        each_label_rec = os.path.join(path_label_rec, prefix_label_rec + each_yuv)
         df_psnr_label_rec, df_sse_label_rec, label_y, input_y_label_rec = yuv_diff_n_frame(each_label, start_frame, each_label_rec, start_frame, w_up, h_up, block_size_up, scale, frame_size)
 
         # diff label-LR-UP
-        each_down_rec_up = list_down_rec_up[idx]
+        each_down_rec_up = os.path.join(path_down_rec_up, prefix_down_rec_up + each_yuv)
         df_psnr_down_rec_up, df_sse_down_rec_up, label_y, input_y_down_rec_up = yuv_diff_n_frame(each_label, start_frame, each_down_rec_up, start_frame, w_up, h_up, block_size_up, scale, frame_size)
 
         # get HR bitrate info
         bit_filename = '/home/kkheon/scripts/yuv_diff/dec/dec_hr/decoder_bit_lcu.txt'
         df_bit_lcu_hr = parse_dec_bit_lcu(bit_filename)
 
-        # TODO : need a transform to down-sampled sized bit
+        # need a transform to down-sampled sized bit
         # sum 2x2 value into 1
 
         # get LR bitrate info
         # assumption : bit info file is already generated.
-        bit_filename = '/home/kkheon/scripts/yuv_diff/dec/dec_lr/decoder_bit_lcu.txt'
+        #bit_filename = '/home/kkheon/scripts/yuv_diff/dec/dec_lr/decoder_bit_lcu.txt'
+        each_yuv_name, _ = each_yuv.split('.', 1)
+        bit_filename = os.path.join(path_down_dec, prefix_down_dec + each_yuv_name + '.txt')
         df_bit_lcu_lr = parse_dec_bit_lcu(bit_filename)
-
-
-        # dataframe for diff-scatter plot
-        list_columns = ['img_idx', 'frame_idx', 'x', 'y', 'bit_diff', 'psnr_diff']
-        #df_diff = pd.DataFrame(columns=['img_idx', 'frame_idx', 'x', 'y', 'bit_diff', 'psnr_diff'])
 
         # save block-image
         w_in_block = int(w / block_size)
         for each_frame_index in range(0, frame_size):
-            df_diff_frm = pd.DataFrame(columns=list_columns)
+            df_raw_frm = pd.DataFrame(columns=list_columns_raw)
             for y in range(0, h, block_size):
                 for x in range(0, w, block_size):
                     # block index
@@ -130,19 +161,19 @@ if __name__ == '__main__':
                     psnrs = [None, None, None]  # label, lr, enc(lr)
                     ssims = [None, None, None]
 
-                    # psnr : LR-HM-UP
+                    # psnr : LR+HM+UP
                     each_df_psnr_down_rec_up = df_psnr_down_rec_up.loc[df_psnr_down_rec_up['frame'] == each_frame_index]
                     each_block_psnr_down_rec_up = each_df_psnr_down_rec_up.iloc[y_in_block][x_in_block]
                     psnrs.append(each_block_psnr_down_rec_up)
 
-                    # psnr : label-HM
+                    # psnr : label+HM
                     each_df_psnr_label_rec = df_psnr_label_rec.loc[df_psnr_label_rec['frame'] == each_frame_index]
                     each_block_psnr_label_rec = each_df_psnr_label_rec.iloc[y_in_block][x_in_block]
                     psnrs.append(each_block_psnr_label_rec)
 
                     bitrates = [None, None]
 
-                    # bitrate : LR-HM
+                    # bitrate : LR+HM
                     each_df_bitrate = df_bit_lcu_lr.loc[df_bit_lcu_lr['frame'] == each_frame_index]
                     block_index = y_in_block * w_in_block + x_in_block
                     bitrate = each_df_bitrate.iloc[block_index]
@@ -212,43 +243,53 @@ if __name__ == '__main__':
 
                     bitrate_diff_rate_format = float("{0:.1f}".format(bitrate_diff_rate))
 
-                    # categorization
-                    if psnr_diff >= 0:
-                        if bitrate_diff_rate < 0.1:
-                            group_index = '0'
-                        elif bitrate_diff_rate < 0.3:
-                            group_index = '3'
+                    if do_plot_framework_diff == True:
+                        # categorization
+                        if psnr_diff >= 0:
+                            if bitrate_diff_rate < 0.1:
+                                group_index = '0'
+                            elif bitrate_diff_rate < 0.3:
+                                group_index = '3'
+                            else:
+                                group_index = '6'
+                        elif psnr_diff < -3:
+                            if bitrate_diff_rate < 0.1:
+                                group_index = '2'
+                            elif bitrate_diff_rate < 0.3:
+                                group_index = '5'
+                            else:
+                                group_index = '8'
                         else:
-                            group_index = '6'
-                    elif psnr_diff < -3:
-                        if bitrate_diff_rate < 0.1:
-                            group_index = '2'
-                        elif bitrate_diff_rate < 0.3:
-                            group_index = '5'
-                        else:
-                            group_index = '8'
-                    else:
-                        if bitrate_diff_rate < 0.1:
-                            group_index = '1'
-                        elif bitrate_diff_rate < 0.3:
-                            group_index = '4'
-                        else:
-                            group_index = '7'
+                            if bitrate_diff_rate < 0.1:
+                                group_index = '1'
+                            elif bitrate_diff_rate < 0.3:
+                                group_index = '4'
+                            else:
+                                group_index = '7'
 
-                    output_path_group = os.path.join(output_path, 'group_' + group_index)
+                        output_path_group = os.path.join(output_path, 'group_' + group_index)
 
-                    if not os.path.exists(output_path_group):
-                        os.makedirs(output_path_group)
+                        if not os.path.exists(output_path_group):
+                            os.makedirs(output_path_group)
 
-                    plot_framework_diff(result_imgs, psnrs, bitrates, xlabels, idx, each_frame_index, x, y, save_dir=output_path_group)
+                        plot_framework_diff(result_imgs, psnrs, bitrates, xlabels, idx, each_frame_index, x, y, save_dir=output_path_group)
 
-                    # save to df_diff
-                    list_diff = [[idx, each_frame_index, x, y, bitrate_diff_rate, psnr_diff]]
-                    df_diff_frm = df_diff_frm.append(pd.DataFrame(list_diff, columns=list_columns))
+                    # to save the raw data
+                    list_raw = [[each_yuv, each_frame_index, x, y, bitrates[4], psnrs[4], bitrates[3], psnrs[3], bitrate_diff_rate, psnr_diff]]
+                    df_raw_frm = df_raw_frm.append(pd.DataFrame(list_raw, columns=list_columns_raw))
 
             # after each frame
 
             # scatter plot
             scatter_plot_filename = output_path + '/scatter_plot_img_%d_frm_%d' % (idx, each_frame_index)
-            draw_scatter_plot_from_df(scatter_plot_filename, df_diff_frm, 'bit_diff', 'psnr_diff')
+            draw_scatter_plot_from_df(scatter_plot_filename, df_raw_frm, 'bit_diff', 'psnr_diff')
+
+            # append to total_df    : memory is available?
+            df_raw = df_raw.append(df_raw_frm)
+
+        # after each_yuv
+
+        # save df_raw as csv
+        filename_psnr = os.path.join(output_path, 'df_raw')
+        df_raw.to_csv(filename_psnr + '.txt', sep=' ')
 
