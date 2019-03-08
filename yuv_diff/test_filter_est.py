@@ -1,7 +1,13 @@
 import numpy as np
+import pandas as pd
 import os
 import math
 from read_yuv import read_yuv420
+from psnr import psnr
+from test_filter_utils import bicubic_interpolation
+from test_filter_utils import bicubic
+from utils import plot_diff
+from scipy import misc
 
 #from scipy import interpolate
 ## estimate cubic filter
@@ -52,6 +58,9 @@ label_path = "./data_vsr/val/label"
 input_path = "./data_vsr/val/label"
 output_path = "./result_filter_est"
 
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
 w = 1920
 h = 1080
 
@@ -60,7 +69,7 @@ h_up = 2160
 
 scale = 2
 
-block_size = 4
+block_size = 64
 block_size_up = block_size * scale
 
 w_up_in_block = math.ceil(w_up / block_size)
@@ -108,8 +117,17 @@ for i in range(4):
     d_w_a.append(np.matmul(d[i], np.transpose(w_a[i])))
     d_w_c.append(np.matmul(d[i], np.transpose(w_c[i])))
 
+
+# dataframe for saving raw data
+list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'psnr_cnn_up', 'psnr_bicubic_up_pred', 'psnr_bicubic_up', 'psnr_diff', 'psnr_bicubic_up_org']
+df_raw = pd.DataFrame(columns=list_columns_raw)
+
 # save each image's PSNR result as file.
 for idx, each_yuv in enumerate(list_yuv_name):
+    # load label
+    each_label = os.path.join(path_label, each_yuv)
+    array_label_y, array_label_cbcr = read_yuv420(each_label, w_up, h_up, frame_size, start_frame=start_frame)
+    label_y = array_label_y.squeeze(axis=3)
 
     # input : load LR+HM
     each_down_yuv_rec = os.path.join(path_down_rec, prefix_down_rec + each_yuv)
@@ -128,11 +146,15 @@ for idx, each_yuv in enumerate(list_yuv_name):
 
     w_in_block = int(w / block_size)
     for each_frame_index in range(0, frame_size):
+        df_raw_frm = pd.DataFrame(columns=list_columns_raw)
         input_y_down_rec_frame = input_y_down_rec[each_frame_index, :, :]
-        input_y_down_rec_up_frame = input_y_down_rec_up[each_frame_index, :, :]
 
         # padding with the edge values of array. (option : edge)
-        input_y_down_rec_frame_padded = np.pad(input_y_down_rec_frame, ((1, 2), (1, 2)), 'edge')
+        #input_y_down_rec_frame_padded = np.pad(input_y_down_rec_frame, ((1, 2), (1, 2)), 'edge')
+        input_y_down_rec_frame_padded = np.pad(input_y_down_rec_frame, ((2, 2), (2, 2)), 'edge')
+
+        # bicubic up using scipy
+        input_y_down_rec_frame_bicubic_up = misc.imresize(input_y_down_rec_frame, (h_up, w_up), interp='bicubic')
 
         for y in range(0, h, block_size):
             for x in range(0, w, block_size):
@@ -145,10 +167,14 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 x_in_block = int(x / block_size)
 
                 data = input_y_down_rec_frame[y:y+block_size, x:x+block_size]
-                target = input_y_down_rec_up_frame[y_up:y_up+block_size_up, x_up:x_up+block_size_up]
+                target = input_y_down_rec_up[each_frame_index, y_up:y_up+block_size_up, x_up:x_up+block_size_up]
+                label = label_y[each_frame_index, y_up:y_up+block_size_up, x_up:x_up+block_size_up]
+                data_bicubic_up = input_y_down_rec_frame_bicubic_up[y_up:y_up+block_size_up, x_up:x_up+block_size_up]
 
                 # more pixels are needed [x-1, x+2]
-                data_padded = input_y_down_rec_frame_padded[y:y+block_size+3, x:x+block_size+3]
+                #data_padded = input_y_down_rec_frame_padded[y:y+block_size+3, x:x+block_size+3]
+                # more pixels are needed [x-2, x+2]
+                data_padded = input_y_down_rec_frame_padded[y:y+block_size+4, x:x+block_size+4]
 
                 list_A = []
                 list_B = []
@@ -160,9 +186,10 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 for each_row_index in range(block_size):  # because calculate a from 4x4 block? no. it should iterate based on block size
                     for each_pixel_index in range(block_size):
                         #target_pixel = target[each_row_index, 3]
-                        target_pixel = target[each_row_index, 2*each_pixel_index + 1]
 
-                        input = np.transpose(data_padded[each_row_index, each_pixel_index:each_pixel_index+4])
+                        target_pixel = target[2*each_row_index, 2*each_pixel_index + 1]
+                        #input = np.transpose(data_padded[each_row_index+1, each_pixel_index:each_pixel_index+4])
+                        input = np.transpose(data_padded[each_row_index+2, each_pixel_index+1:each_pixel_index+5])
 
                         d_w_a_p = np.matmul(d_w_a, input)
                         d_w_c_p = np.matmul(d_w_c, input)
@@ -181,8 +208,10 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 for each_col_index in range(block_size):  # because calculate a from 4x4 block? no. it should iterate based on block size
                     for each_pixel_index in range(block_size):
                         #target_pixel = target[each_row_index, 3]
-                        target_pixel = target[2*each_pixel_index + 1, each_col_index]
-                        input = np.transpose(data_padded[each_pixel_index:each_pixel_index+4, each_col_index])
+
+                        target_pixel = target[2*each_pixel_index + 1, 2*each_col_index]
+                        #input = np.transpose(data_padded[each_pixel_index:each_pixel_index+4, each_col_index+1])
+                        input = np.transpose(data_padded[each_pixel_index + 1:each_pixel_index+5, each_col_index+2])
 
                         d_w_a_p = np.matmul(d_w_a, input)
                         d_w_c_p = np.matmul(d_w_c, input)
@@ -215,83 +244,70 @@ for idx, each_yuv in enumerate(list_yuv_name):
                         best_a = each_a
                         min_loss = loss
 
-                ## run with new 'a'
-                #list_pred = [best_a * A + B for A, B in zip(list_A, list_B)]
-                #list_error = [abs(A - B) for A, B in zip(list_pred, list_P)]
-                #print(sum(list_error))
-
-                ## run with base 'a=-0.5'
-                #list_pred_base = [(-0.5) * A + B for A, B in zip(list_A, list_B)]
-                #list_error_base = [abs(A - B) for A, B in zip(list_pred_base, list_P)]
-                #print(sum(list_error_base))
-
-                # do interpolation with new 'a'
-                # calculate 'w' with new 'a'
-                new_w = [best_a * A + B for A, B in zip(d_w_a, d_w_c)]
-
-                # 1D-interpolation
-                pred_block = []
-                for each_row_index in range(block_size+3):
-                    pred_row = []
-                    for each_pixel_index in range(block_size):
-                       input = np.transpose(data_padded[each_row_index, each_pixel_index:each_pixel_index+4])
-
-                       pred = np.matmul(new_w, input)
-                       pred_row.append(pred)
-
-                    pred_block.append(pred_row)
-
-                # pred_block to array
-                pred_block = np.array(pred_block)
-
-                # merge data_padded and pred_block
-                pred_block_1d = np.empty(shape=(block_size + 3, 0))
-
-                ## stack padded pixel first.
-                #pred_block_1d = np.column_stack([pred_block_1d, data_padded[:, 0]])
-
-                # stack column by column : but is pred_block is padded? this could be a problem.
-                for i in range(block_size):
-                    pred_block_1d = np.column_stack([pred_block_1d, data_padded[:, i+1], pred_block[:, i]])
-
-                ## stack padded pixel last.
-                #pred_block_1d = np.column_stack([pred_block_1d, data_padded[:, -2], data_padded[:, -1]])
-
-
-                # 1D-interpolation : column-wise
-                pred_block = []
-                pred_block_row_size, pred_block_col_size = pred_block_1d.shape
-                #for each_col_index in range(block_size+3+1):
-                for each_col_index in range(pred_block_col_size):
-                    pred_col = []
-                    for each_pixel_index in range(block_size):
-                       input = np.transpose(pred_block_1d[each_pixel_index:each_pixel_index+4, each_col_index])
-
-                       pred = np.matmul(new_w, input)
-                       pred_col.append(pred)
-
-                    pred_block.append(pred_col)
-
-                # pred_block to array
-                pred_block = np.array(pred_block)
-                pred_block_transpose = np.transpose(pred_block)
-
-                # merge data_padded and pred_block
-                #pred_block_2d = np.empty(shape=(0, block_size_up))
-                pred_block_2d = []
-
-                # stack row by row
-                for i in range(block_size):
-                    #pred_block_2d = np.stack([pred_block_2d, pred_block_1d[i+1, :], pred_block_transpose[i, :]])
-                    #pred_block_2d = np.stack([pred_block_1d[i+1, :], pred_block_transpose[i, :]])
-                    pred_block_2d.append(pred_block_1d[i+1, :])
-                    pred_block_2d.append(pred_block_transpose[i, :])
-
-                pred_block_2d = np.array(pred_block_2d)
-
-                print(pred_block_2d)
-
-
+                # do interpolation with 'best_a'
+                #pred_block_2d = bicubic_interpolation(best_a, d_w_a, d_w_c, block_size, data_padded)
+                pred_block_2d = bicubic(data_padded, block_size, block_size, 2, best_a)
+                # do interpolation with 'a=-0.5'
+                #bicubic_block_2d = bicubic_interpolation(-0.5, d_w_a, d_w_c, block_size, data_padded)
+                bicubic_block_2d = bicubic(data_padded, block_size, block_size, 2, -0.5)
 
                 # block-level comparision
+                # diff with label
+                # diff 1 : cnn-up
+                psnr_cnn_up = psnr(target / 255., label / 255., 0)
+
+                # diff 2 : bicubic-up with new 'a'
+                psnr_bicubic_up_pred = psnr(pred_block_2d / 255., label / 255., 0)
+
+                # diff 3 : bicubic-up
+                psnr_bicubic_up = psnr(bicubic_block_2d / 255., label / 255., 0)
+
+                # diff 4 : bicubic-up by scipy.misc.imresize
+                psnr_bicubic_up_org = psnr(data_bicubic_up / 255., label / 255., 0)
+
+                #print(psnr_cnn_up, psnr_bicubic_up, psnr_bicubic_up_pred)
+
+                #=== plot
+                imgs = []
+                psnrs = [None]  # label, lr, enc(lr)
+                imgs.append(label)
+                imgs.append(target)
+                imgs.append(pred_block_2d)
+                imgs.append(bicubic_block_2d)
+                imgs.append(data_bicubic_up)
+
+                psnrs.append(psnr_cnn_up)
+                psnrs.append(psnr_bicubic_up_pred)
+                psnrs.append(psnr_bicubic_up)
+                psnrs.append(psnr_bicubic_up_org)
+
+                xlabels = ['ORG', 'CNN_UP', 'BICUBIC_UP_PRED', 'BICUBIC_UP', 'BICUBIC_UP_ORG']
+
+                # separate dir depending on PSNR
+                # psnr diff
+                psnr_diff = psnr_bicubic_up_pred - psnr_bicubic_up
+
+                if math.isinf(psnr_diff):
+                    psnr_diff = 99.0
+
+                psnr_diff_floor = math.floor(psnr_diff)
+                str_psnr_diff_floor = str(psnr_diff_floor)
+                output_path_psnr = os.path.join(output_path, 'group_psnr_' + str_psnr_diff_floor)
+
+                if not os.path.exists(output_path_psnr):
+                    os.makedirs(output_path_psnr)
+
+                #plot_diff(imgs, psnrs, xlabels, idx, each_frame_index, x, y, save_dir=output_path_psnr)
+
+                # to save the raw data
+                list_raw = [[each_yuv, each_frame_index, x, y, psnr_cnn_up, psnr_bicubic_up, psnr_bicubic_up_pred, psnr_diff, psnr_bicubic_up_org]]
+                df_raw_frm = df_raw_frm.append(pd.DataFrame(list_raw, columns=list_columns_raw))
+
+        # append to total_df    : memory is available?
+        df_raw = df_raw.append(df_raw_frm)
+
+
+# save df_raw as csv
+filename_psnr = os.path.join(output_path, 'df_raw')
+df_raw.to_csv(filename_psnr + '.txt', sep=' ')
 
