@@ -14,7 +14,7 @@ def psnr(target, ref, scale):
 
   diff = ref_data - target_data
   diff = diff.flatten('C')
-  rmse = math.sqrt( np.mean(diff ** 2.) )
+  rmse = math.sqrt(np.mean(diff ** 2.))
   if rmse == 0:
       return np.inf
   else:

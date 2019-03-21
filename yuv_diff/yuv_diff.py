@@ -161,6 +161,58 @@ def yuv_diff_n_frame(filename_label, start_frame_label, filename_input, start_fr
 
     return df_psnr, df_sse, label_y_pel, input_y_pel
 
+def yuv_diff_n_frame(label_y, input_y, w, h, block_size, scale):
+
+    # normalization
+    label_y = label_y / 255.
+    input_y = input_y / 255.
+
+    df_psnr = pd.DataFrame()
+    df_sse = pd.DataFrame()
+
+    # count for each frame
+    block_count = 0
+
+    # loop based on block
+    list_psnr_frame = []
+    list_sse_frame = []
+    for y in range(0, h, block_size):
+        list_psnr_row = []
+        list_sse_row = []
+
+        for x in range(0, w, block_size):
+
+            # pick block from input
+            sub_label_y = label_y[y:y+block_size, x:x+block_size]
+            sub_input_y = input_y[y:y+block_size, x:x+block_size]
+
+            # PSNR calculation
+            each_psnr = psnr(sub_input_y, sub_label_y, scale)
+            #each_ssim = ssim(sub_input_y, sub_label_y, data_range=256)
+
+            list_psnr_row.append(float("{0:.4f}".format(each_psnr)))
+
+            # SSE
+            each_sse = np.sum((sub_label_y - sub_input_y) ** 2)
+            list_sse_row.append(float("{0:.4f}".format(each_sse)))
+
+            block_count += 1
+
+        list_psnr_frame.append(list_psnr_row)
+        list_sse_frame.append(list_sse_row)
+
+    # outside of the loop-block
+    # stat the block-level PSNR
+    # list_psnr to df
+    df_psnr_frm = pd.DataFrame(list_psnr_frame)
+    df_sse_frm = pd.DataFrame(list_sse_frame)
+
+    # append to global table.
+    df_psnr = df_psnr.append(df_psnr_frm)
+    df_sse = df_sse.append(df_sse_frm)
+
+    return df_psnr, df_sse
+
 
 def yuv_diff_temporal(filename_input, start_frame_input, w, h, frame_size, block_size, scale):
 

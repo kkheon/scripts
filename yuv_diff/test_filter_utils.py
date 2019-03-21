@@ -9,6 +9,20 @@ def u(s, a):
         return a*(abs(s)**3)-(5*a)*(abs(s)**2)+(8*a)*abs(s)-4*a
     return 0
 
+def u_a(s):
+    if (abs(s) >= 0) & (abs(s) <= 1):
+        return (abs(s)**3)-(abs(s)**2)
+    elif (abs(s) > 1) & (abs(s) <= 2):
+        return (abs(s)**3)-5*(abs(s)**2)+8*abs(s)-4
+    return 0
+
+def u_c(s):
+    if (abs(s) >= 0) & (abs(s) <= 1):
+        return (2)*(abs(s)**3)-(3)*(abs(s)**2)+1
+    elif (abs(s) > 1) & (abs(s) <= 2):
+        return 0
+    return 0
+
 def bicubic_interpolation(a, d_w_a, d_w_c, block_size, data_padded ):
     # do interpolation with new 'a'
     # calculate 'w' with new 'a'
@@ -202,6 +216,26 @@ def bicubic(img, H, W, ratio, a):
             #dst[j, i, c] = np.dot(np.dot(mat_l, mat_m),mat_r)
             dst[j, i] = np.dot(np.dot(mat_l, mat_m),mat_r)
 
+            ## for debug : test partial sum
+            #mat_l_a = np.matrix([[u_a(x1), u_a(x2), u_a(x3), u_a(x4)]])
+            #mat_r_a = np.matrix([[u_a(y1)], [u_a(y2)], [u_a(y3)], [u_a(y4)]])
+
+            #a2 = np.dot(np.dot(mat_l_a, mat_m), mat_r_a)
+
+            ## term a^1
+            #mat_l_c = np.matrix([[u_c(x1), u_c(x2), u_c(x3), u_c(x4)]])
+            #mat_r_c = np.matrix([[u_c(y1)], [u_c(y2)], [u_c(y3)], [u_c(y4)]])
+
+            #a1 = np.dot(np.dot(mat_l_a, mat_m), mat_r_c) + np.dot(np.dot(mat_l_c, mat_m), mat_r_a)
+
+            ## term a^0
+            #constant = np.dot(np.dot(mat_l_c, mat_m), mat_r_c)
+
+            #curr_pixel = a2 * (a ** 2) + a1 * a + constant
+
+            #diff = dst[j, i] - curr_pixel
+
+
     return dst
 
 
@@ -291,3 +325,237 @@ def pred_alpha(block_size, target, data_padded, d0_w_a, d0_w_c, d1_w_a, d1_w_c):
             min_loss = loss
 
     return best_a
+
+
+def solve_quadratic_equation(a, b, c):
+    d = b ** 2 - 4 * a * c  # discriminant
+
+    if d < 0:
+        #print("This equation has no real solution")
+        return []
+    elif d == 0:
+        x = (-b + math.sqrt(b ** 2 - 4 * a * c)) / 2 * a
+        #print(("This equation has one solutions: "), x)
+        return [x]
+    # add the extra () above or it does not show the answer just the text.
+    else:
+        x1 = (-b + math.sqrt((b ** 2) - (4 * (a * c)))) / (2 * a)
+        x2 = (-b - math.sqrt((b ** 2) - (4 * (a * c)))) / (2 * a)
+        #print("This equation has two solutions: ", x1, " or", x2)
+        return [x1, x2]
+
+def closest_node(node, nodes):
+    nodes = np.asarray(nodes)
+    #dist_2 = np.sum((nodes - node)**2, axis=1)
+    dist_2 = (nodes - node)**2
+    return nodes[np.argmin(dist_2)]
+
+def farthest_node(node, nodes):
+    nodes = np.asarray(nodes)
+    #dist_2 = np.sum((nodes - node)**2, axis=1)
+    dist_2 = (nodes - node)**2
+    return nodes[np.argmax(dist_2)]
+
+def get_loss(a_candi, a2, a1, constant, target):
+    # pred pixel
+    curr_pixel = a2 * (a_candi ** 2) + a1 * a_candi + constant
+    curr_pixel_clipped = np.clip(curr_pixel, 0, 255)
+    curr_pixel_clipped_around = np.around(curr_pixel_clipped).astype(np.uint8)
+
+    # type change : uint8 => int
+    curr_pixel_clipped_around_int = curr_pixel_clipped_around.astype(np.int)
+
+    target_clipped = np.clip(target, 0, 255)
+    target_int = np.around(target_clipped).astype(np.int)
+    curr_pixel_diff = np.subtract(curr_pixel_clipped_around_int, target_int)
+
+    # l1 loss
+    #curr_loss_pixel = np.sum(np.absolute(curr_pixel_diff))
+
+    # l2 loss
+    curr_loss_pixel = np.sum(np.square(curr_pixel_diff))
+
+    return curr_loss_pixel, curr_pixel_clipped_around_int
+
+
+# Bicubic operation
+def pred_alpha_2d(input, H, W, ratio, target):
+
+    #Create new image
+    dH = math.floor(H*ratio)
+    dW = math.floor(W*ratio)
+
+    a2 = np.zeros((dH, dW))
+    a1 = np.zeros((dH, dW))
+    a0 = np.zeros((dH, dW))
+
+    constant = np.zeros((dH, dW))
+
+    list_period = []
+
+    h = 1/ratio
+
+    for j in range(dH):
+        for i in range(dW):
+            #x, y = i * h + 2, j * h + 2
+            #x, y = i * h + 1 + h, j * h + 1 + h
+
+            ###==ref : u = x / scale + 0.5 * (1 - 1 / scale)
+            x, y = i * h + 1.5 + 0.5 * (1 - h), j * h + 1.5 + 0.5 * (1 - h)
+
+            x1 = 1 + x - math.floor(x)
+            x2 = x - math.floor(x)
+            x3 = math.floor(x) + 1 - x
+            x4 = math.floor(x) + 2 - x
+
+            y1 = 1 + y - math.floor(y)
+            y2 = y - math.floor(y)
+            y3 = math.floor(y) + 1 - y
+            y4 = math.floor(y) + 2 - y
+
+            # term a^2
+            mat_l_a = np.matrix([[u_a(x1), u_a(x2), u_a(x3), u_a(x4)]])
+            mat_m = np.matrix([[input[int(y - y1), int(x - x1)], input[int(y - y2), int(x - x1)], input[int(y + y3), int(x - x1)], input[int(y + y4), int(x - x1)]],
+                               [input[int(y - y1), int(x - x2)], input[int(y - y2), int(x - x2)], input[int(y + y3), int(x - x2)], input[int(y + y4), int(x - x2)]],
+                               [input[int(y - y1), int(x + x3)], input[int(y - y2), int(x + x3)], input[int(y + y3), int(x + x3)], input[int(y + y4), int(x + x3)]],
+                               [input[int(y - y1), int(x + x4)], input[int(y - y2), int(x + x4)], input[int(y + y3), int(x + x4)], input[int(y + y4), int(x + x4)]]])
+            mat_r_a = np.matrix([[u_a(y1)], [u_a(y2)], [u_a(y3)], [u_a(y4)]])
+
+            a2[j, i] = np.dot(np.dot(mat_l_a, mat_m), mat_r_a)
+
+            # term a^1
+            mat_l_c = np.matrix([[u_c(x1), u_c(x2), u_c(x3), u_c(x4)]])
+            mat_r_c = np.matrix([[u_c(y1)], [u_c(y2)], [u_c(y3)], [u_c(y4)]])
+
+            a1[j, i] = np.dot(np.dot(mat_l_a, mat_m), mat_r_c) + np.dot(np.dot(mat_l_c, mat_m), mat_r_a)
+
+            # term a^0
+            constant[j, i] = np.dot(np.dot(mat_l_c, mat_m), mat_r_c)
+            a0[j, i] = np.dot(np.dot(mat_l_c, mat_m), mat_r_c) - target[j, i]
+
+            # solve quadratic equation of a.
+            if a2[j, i] == 0:  # linear equation
+                list_sol = [- a0[j, i] / a1[j, i]]
+            else:
+                list_sol = solve_quadratic_equation(a2[j, i], a1[j, i], a0[j, i])
+
+            # add to period list
+            list_period = list_period + list_sol
+
+    # after 2D loop,
+    # remove redundancy of 'a' and sort 'a'
+    list_period = [x for x in list_period if str(x) != 'nan']
+    list_period_sorted = sorted(set(list_period))
+
+    # bicubic alpha
+    best_a = -0.5
+
+    # calculate current period's sum
+    sum = (best_a ** 2) * a2 + (best_a * a1) + a0
+    sum_abs = np.absolute(sum)
+    bicubic_loss = np.sum(sum_abs)
+    bicubic_loss_pixel, pred_bicubic = get_loss(best_a, a2, a1, constant, target)
+    pred_best_a = pred_bicubic
+
+    ## for debug
+    #bicubic_block_2d = bicubic(input, H, W, 2, -0.5)
+    #bicubic_loss_pixel_with_bicubic = get_loss(best_a, a2, a1, constant, bicubic_block_2d)
+
+
+    # defalult alpha
+    min_loss = bicubic_loss
+    min_loss_pixel = bicubic_loss_pixel
+
+    # TODO : add last period
+    # for each period, (a= period < each_period)
+    for period_index, each_period in enumerate(list_period_sorted):
+
+        # last period
+        if period_index == 0:
+            #last_period = None
+            last_period = - np.inf
+            each_period_a = each_period - 0.01
+        else:
+            last_period = list_period_sorted[period_index - 1]
+            each_period_a = (each_period + last_period) / 2
+
+        if each_period_a == np.inf:
+            continue
+
+        list_period_curr = [last_period, each_period]
+        list_period_curr = [v for v in list_period_curr if not (math.isinf(v) or math.isnan(v))]
+
+        # determine each equation's sign and sum the coefficients.
+        each_period_a2 = each_period_a ** 2
+
+        # calculate current period's sum    # TODO : does it work?
+        sum = each_period_a2 * a2 + each_period_a * a1 + a0
+
+        # extract sign of each element
+        sign = np.sign(sum)
+
+        # get abs value of current period by multiplying each element's sign.
+        a2_abs = np.multiply(sign, a2)
+        a1_abs = np.multiply(sign, a1)
+        a0_abs = np.multiply(sign, a0)
+
+        # sum all the values.
+        a2_abs_sum = np.sum(a2_abs)
+        a1_abs_sum = np.sum(a1_abs)
+        a0_abs_sum = np.sum(a0_abs)
+
+        axis_of_symmetry = - a1_abs_sum / (2 * a2_abs_sum)
+
+        # if a2 > 0, calculate derivative. and calculate loss for the point where derivative=0.
+        # check if axis_of_symmetry is in this period.
+        if a2_abs_sum > 0:
+            axis_of_symmetry_is_here = False
+            if (last_period == None):
+                if (axis_of_symmetry < each_period):
+                    axis_of_symmetry_is_here = True
+            elif (axis_of_symmetry > last_period) and (axis_of_symmetry < each_period):
+                axis_of_symmetry_is_here = True
+
+            if axis_of_symmetry_is_here:
+                # check the loss of center
+                a_candi = axis_of_symmetry
+            else:
+                # find close one from center
+                a_candi = closest_node(axis_of_symmetry, list_period_curr)
+
+        elif a2_abs_sum < 0:
+            # find far one from center
+            a_candi = farthest_node(axis_of_symmetry, list_period_curr)
+        else: #a2_abs_sum == 0
+            # how can I treat this?
+            if a1_abs_sum >= 0:
+                a_candi = last_period
+            else:
+                a_candi = each_period
+
+        # calculate loss
+        curr_loss_pixel, pred_a_candi = get_loss(a_candi, a2, a1, constant, target)
+
+        # curr loss from equation
+        curr_loss = a2_abs_sum * (a_candi ** 2) + a1_abs_sum * a_candi + a0_abs_sum
+
+        # diff because of clipping and rounding
+        diff_clipping = curr_loss - curr_loss_pixel
+        diff_bicubic_loss = curr_loss - bicubic_loss
+        diff_bicubic_loss_pixel = curr_loss_pixel - bicubic_loss_pixel
+
+        #if curr_loss < min_loss:
+        #    min_loss = curr_loss
+        if curr_loss_pixel < min_loss_pixel:
+            min_loss = curr_loss
+            min_loss_pixel = curr_loss_pixel
+
+            min_diff_bicubic_loss = diff_bicubic_loss
+            min_diff_bicubic_loss_pixel = diff_bicubic_loss_pixel
+
+            best_a = a_candi
+
+            pred_best_a = pred_a_candi
+
+    return best_a, pred_best_a
+

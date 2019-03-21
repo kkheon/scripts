@@ -8,6 +8,7 @@ from test_filter_utils import bicubic_interpolation
 from test_filter_utils import bicubic
 from test_filter_utils import padding
 from test_filter_utils import pred_alpha
+from test_filter_utils import pred_alpha_2d
 from utils import plot_diff
 from scipy import misc
 
@@ -76,6 +77,7 @@ h_up = 2160
 scale = 2
 
 block_size = 64
+#block_size = 16
 block_size_up = block_size * scale
 
 w_up_in_block = math.ceil(w_up / block_size)
@@ -151,9 +153,11 @@ for i in range(4):
 # dataframe for saving raw data
 list_columns_raw = ['img_name', 'frame_idx', 'x', 'y',
                     'pred_a', 'psnr_cnn_up', 'psnr_bicubic_up_pred',
+                    #'psnr_bicubic_up_pred_2d',
                     'pred_a_from_label', 'psnr_bicubic_up_pred_from_label',
                     'psnr_bicubic_up', 'psnr_diff',
-                    'psnr_bicubic_up_scipy', 'psnr_bicubic_up_matlab']
+                    #'psnr_bicubic_up_scipy', 'psnr_bicubic_up_matlab']
+                    'psnr_bicubic_up_scipy']
 df_raw = pd.DataFrame(columns=list_columns_raw)
 
 # save each image's PSNR result as file.
@@ -193,19 +197,19 @@ for idx, each_yuv in enumerate(list_yuv_name):
         input_y_down_rec_frame_bicubic_up = misc.imresize(input_y_down_rec_frame, (h_up, w_up), interp='bicubic')
 
         # bicubic up using imresize
-        input_y_down_rec_frame_bicubic_up_matlab = imresize(input_y_down_rec_frame, 2, (h_up, w_up))
+        #input_y_down_rec_frame_bicubic_up_matlab = imresize(input_y_down_rec_frame, 2, (h_up, w_up))
 
         ## bicubic up using bicubic1
         ## padding
         #input_y_down_rec_frame_padded1 = padding(input_y_down_rec_frame, h, w)
         #input_y_down_rec_frame_bicubic_up1 = bicubic(input_y_down_rec_frame_padded1, h, w, ratio=2, a=-1/2)
 
-        #for y in range(0, h, block_size):
         for h_index in range(0, h_in_block):
+        #for h_index in range(15, h_in_block):
             #print("loop-of-y: %d / %d" % (y, h))
             print("loop-of-y: %d / %d" % (h_index, h_in_block))
-            #for x in range(0, w, block_size):
             for w_index in range(0, w_in_block):
+            #for w_index in range(27, w_in_block):
 
                 x = w_index * block_size
                 y = h_index * block_size
@@ -223,7 +227,7 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 label = label_y[each_frame_index, y_up:y_up+block_size_up, x_up:x_up+block_size_up]
                 data_bicubic_up_scipy = input_y_down_rec_frame_bicubic_up[y_up:y_up+block_size_up, x_up:x_up+block_size_up]
 
-                data_bicubic_up_matlab = input_y_down_rec_frame_bicubic_up_matlab[y_up:y_up+block_size_up, x_up:x_up+block_size_up]
+                #data_bicubic_up_matlab = input_y_down_rec_frame_bicubic_up_matlab[y_up:y_up+block_size_up, x_up:x_up+block_size_up]
 
                 #data_bicubic_up1 = input_y_down_rec_frame_bicubic_up1[y_up:y_up+block_size_up, x_up:x_up+block_size_up]
 
@@ -234,24 +238,35 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 data_padded = input_y_down_rec_frame_padded[y:y+block_size+4, x:x+block_size+4]
 
                 # finding 'a' from CNN_UP
-                best_a_from_cnn_up = pred_alpha(block_size, target, data_padded, d0_w_a, d0_w_c, d1_w_a, d1_w_c)
+                #best_a_from_cnn_up = pred_alpha(block_size, target, data_padded, d0_w_a, d0_w_c, d1_w_a, d1_w_c)
+                best_a_from_cnn_up, pred_from_cnn_up = pred_alpha_2d(data_padded, block_size, block_size, 2, target)
 
                 # finding 'a' from label
-                best_a_from_label = pred_alpha(block_size, label, data_padded, d0_w_a, d0_w_c, d1_w_a, d1_w_c)
+                #best_a_from_label = pred_alpha(block_size, label, data_padded, d0_w_a, d0_w_c, d1_w_a, d1_w_c)
+                best_a_from_label, pred_from_label = pred_alpha_2d(data_padded, block_size, block_size, 2, label)
 
                 # do interpolation with 'best_a'
                 #pred_block_2d = bicubic_interpolation(best_a, d_w_a, d_w_c, block_size, data_padded)
                 pred_block_2d = bicubic(data_padded, block_size, block_size, 2, best_a_from_cnn_up)
                 pred_block_2d = np.clip(pred_block_2d, 0, 255)
+                pred_block_2d = np.around(pred_block_2d).astype(np.uint8)
+
+                # for debug
+                #diff_pred_block_2d = pred_block_2d - pred_from_cnn_up
+
+                #pred_block_2d_from_2d = bicubic(data_padded, block_size, block_size, 2, best_a_from_cnn_up_2d)
+                #pred_block_2d_from_2d = np.clip(pred_block_2d_from_2d, 0, 255)
 
                 # do interpolation with 'a=-0.5'
                 #bicubic_block_2d = bicubic_interpolation(-0.5, d_w_a, d_w_c, block_size, data_padded)
                 bicubic_block_2d = bicubic(data_padded, block_size, block_size, 2, -0.5)
                 bicubic_block_2d = np.clip(bicubic_block_2d, 0, 255)
+                bicubic_block_2d = np.around(bicubic_block_2d).astype(np.uint8)
 
                 # do interpolation with 'best_a_from_label'
                 pred_block_2d_from_label = bicubic(data_padded, block_size, block_size, 2, best_a_from_label)
                 pred_block_2d_from_label = np.clip(pred_block_2d_from_label, 0, 255)
+                pred_block_2d_from_label = np.around(pred_block_2d_from_label).astype(np.uint8)
 
                 ## bicubic2
                 #xx = np.linspace(-2, block_size + 2, block_size + 4)
@@ -270,6 +285,9 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 # diff 2 : bicubic-up with new 'a'
                 psnr_bicubic_up_pred = psnr(pred_block_2d / 255., label / 255., 0)
 
+                ## diff 2 : bicubic-up with new 'a'
+                #psnr_bicubic_up_pred_2d = psnr(pred_block_2d_from_2d / 255., label / 255., 0)
+
                 # diff 2 : bicubic-up with new 'a'
                 psnr_pred_a_from_label = psnr(pred_block_2d_from_label / 255., label / 255., 0)
 
@@ -283,7 +301,7 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 #psnr_bicubic_up1 = psnr(data_bicubic_up1 / 255., label / 255., 0)
 
                 # diff 6 : bicubic-up by matlab
-                psnr_bicubic_up_matlab = psnr(data_bicubic_up_matlab / 255., label / 255., 0)
+                #psnr_bicubic_up_matlab = psnr(data_bicubic_up_matlab / 255., label / 255., 0)
 
                 #=== plot
                 imgs = []
@@ -291,21 +309,25 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 imgs.append(label)
                 imgs.append(target)
                 imgs.append(pred_block_2d)
+                #imgs.append(pred_block_2d_from_2d)
                 imgs.append(pred_block_2d_from_label)
                 imgs.append(bicubic_block_2d)
                 imgs.append(data_bicubic_up_scipy)
                 #imgs.append(data_bicubic_up1)
-                imgs.append(data_bicubic_up_matlab)
+                #imgs.append(data_bicubic_up_matlab)
 
                 psnrs.append(psnr_cnn_up)
                 psnrs.append(psnr_bicubic_up_pred)
+                #psnrs.append(psnr_bicubic_up_pred_2d)
                 psnrs.append(psnr_pred_a_from_label)
                 psnrs.append(psnr_bicubic_up)
                 psnrs.append(psnr_bicubic_up_scipy)
                 #psnrs.append(psnr_bicubic_up1)
-                psnrs.append(psnr_bicubic_up_matlab)
+                #psnrs.append(psnr_bicubic_up_matlab)
 
-                xlabels = ['ORG', 'CNN_UP', 'BICUBIC_UP\n(pred_from_cnn_up)', 'BICUBIC_UP\n(pred_from_label)',
+                xlabels = ['ORG', 'CNN_UP', 'BICUBIC_UP\n(pred_from_cnn_up)',
+                           'BICUBIC_UP\n(pred_from_2d)',
+                           'BICUBIC_UP\n(pred_from_label)',
                            'BICUBIC_UP\n(a=-0.5)', 'BICUBIC_UP\n(scipy)', 'BICUBIC_UP\n(matlab)']
 
                 # separate dir depending on PSNR
@@ -323,13 +345,15 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 if not os.path.exists(output_path_psnr):
                     os.makedirs(output_path_psnr)
 
-                plot_diff(imgs, psnrs, xlabels, idx, each_frame_index, x, y, save_dir=output_path_psnr)
+                #plot_diff(imgs, psnrs, xlabels, idx, each_frame_index, x, y, save_dir=output_path_psnr)
 
                 # to save the raw data
                 list_raw = [[each_yuv, each_frame_index, x, y,
                              best_a_from_cnn_up, psnr_cnn_up, psnr_bicubic_up_pred,
+                             #psnr_bicubic_up_pred_2d,
                              best_a_from_label, psnr_pred_a_from_label,
-                             psnr_bicubic_up, psnr_diff, psnr_bicubic_up_scipy, psnr_bicubic_up_matlab]]
+                             #psnr_bicubic_up, psnr_diff, psnr_bicubic_up_scipy, psnr_bicubic_up_matlab]]
+                             psnr_bicubic_up, psnr_diff, psnr_bicubic_up_scipy]]
 
                 df_raw_frm = df_raw_frm.append(pd.DataFrame(list_raw, columns=list_columns_raw))
 
