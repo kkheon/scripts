@@ -96,6 +96,10 @@ if __name__ == '__main__':
     for each_id in list_id:
         list_columns_raw += ['rd_cost_diff_'+each_id, ]
 
+    # min id, r, d
+    list_columns_raw += ['min_id', 'min_r', 'min_d', ]
+    list_columns_raw += ['down_min_id', 'down_min_r', 'down_min_d', ]
+
     df_raw = pd.DataFrame(columns=list_columns_raw)
 
     # input list
@@ -365,6 +369,30 @@ if __name__ == '__main__':
                     for id_index, each_id in enumerate(list_id):
                         list_raw += [list_rd_cost[id_index+2] - list_rd_cost[1]]
 
+                    # find min rd
+                    min_rd = np.min(list_rd_cost[1:])
+                    argmin_rd = np.argmin(list_rd_cost[1:]) + 1
+                    min_rd_r = bitrates[argmin_rd]
+                    min_rd_d = psnrs[argmin_rd]
+
+                    if argmin_rd == 1:
+                        min_id = 'org'
+                    else:
+                        min_id = list_id[argmin_rd-2]
+
+                    # add id and r, d
+                    list_raw += [min_id, min_rd_r, min_rd_d]
+
+                    # find min rd between down-sampling
+                    min_rd = np.min(list_rd_cost[2:])
+                    argmin_rd = np.argmin(list_rd_cost[2:]) + 2
+                    min_rd_r = bitrates[argmin_rd]
+                    min_rd_d = psnrs[argmin_rd]
+                    min_id = list_id[argmin_rd-2]
+
+                    # add id and r, d
+                    list_raw += [min_id, min_rd_r, min_rd_d]
+
                     #list_raw += [ bitrate_diff_rate, psnr_diff ]
                     df_raw_frm = df_raw_frm.append(pd.DataFrame([list_raw], columns=list_columns_raw))
 
@@ -382,4 +410,66 @@ if __name__ == '__main__':
         # save df_raw as csv
         filename_psnr = os.path.join(output_path, 'df_raw')
         df_raw.to_csv(filename_psnr + '.txt', sep=' ')
+
+        # from df_raw
+        # 0. each mode's frame level average    => should I re-calculate this?
+        # 1. pick mode whose rd_cost is minimum and its result.
+        # 2. the ratio of minimum rd cost between down-sampling
+
+        # calculate stats
+
+        # summary
+        # PSNR => avg, R => sum
+        #list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'rd_cost_org', ]
+
+        #for each_id in list_id:
+        #    list_columns_raw += ['bit_'+each_id, 'psnr_'+each_id, 'rd_cost_'+each_id, ]
+        #for each_id in list_id:
+        #    list_columns_raw += ['rd_cost_diff_'+each_id, ]
+
+        ## min id, r, d
+        #list_columns_raw += ['min_id', 'min_r', 'min_d', ]
+        #list_columns_raw += ['down_min_id', 'down_min_r', 'down_min_d', ]
+
+        list_summary = []
+        list_columns_summary = []
+
+        bit_org_sum = df_raw['bit_org'].sum()
+        psnr_org_sum = df_raw['psnr_org'].mean()
+        list_summary += [bit_org_sum, psnr_org_sum]
+        list_columns_summary += ['bit_org_sum', 'psnr_org_sum']
+
+        for each_id in list_id:
+            list_summary += [df_raw['bit_'+each_id].sum(), df_raw['psnr_'+each_id].mean()]
+            list_columns_summary += ['bit_'+each_id, 'psnr_'+each_id]
+
+        bit_min_sum = df_raw['min_r'].sum()
+        psnr_min_sum = df_raw['min_d'].mean()
+        list_summary += [bit_min_sum, psnr_min_sum]
+        list_columns_summary += ['bit_min_sum', 'psnr_min_sum']
+
+        bit_down_min_sum = df_raw['down_min_r'].sum()
+        psnr_down_min_sum = df_raw['down_min_d'].mean()
+        list_summary += [bit_down_min_sum, psnr_down_min_sum]
+        list_columns_summary += ['bit_down_min_sum', 'psnr_down_min_sum']
+
+        df_summary = pd.DataFrame([list_summary], columns=list_columns_summary)
+
+        filename_summary = os.path.join(output_path, 'df_raw_summary')
+        df_summary.to_csv(filename_summary + '.txt', sep=' ')
+
+
+        # mode ratio using groupby
+        # 1. count
+        stat_min_id = df_raw.groupby('min_id').count()
+        print(stat_min_id)
+        # but don't need more than count
+
+        filename_min_id = os.path.join(output_path, 'df_raw_min_id')
+        stat_min_id.to_csv(filename_min_id + '.txt', sep=' ')
+
+        #stat_down_min_id = df_raw.groupby('down_min_id').count()
+        #filename_min_id = os.path.join(output_path, 'df_raw_min_id_down')
+        #stat_down_min_id.to_csv(filename_min_id + '.txt', sep=' ')
+
 
