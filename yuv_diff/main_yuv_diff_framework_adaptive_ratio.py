@@ -19,6 +19,8 @@ from utils import draw_scatter_plot_from_df
 
 from read_yuv import read_yuv420
 
+from psnr import mse_to_psnr
+
 import math
 
 
@@ -43,6 +45,10 @@ if __name__ == '__main__':
 
     start_frame = 0
     frame_size = 5
+    #frame_size = 1
+
+    fps = 60
+
     # for QP 32, 35, 34, 35, 33
     list_lambda = [
         49.222131819429933,
@@ -89,10 +95,10 @@ if __name__ == '__main__':
 
     # dataframe for saving raw data
     #list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'bit_down/up', 'psnr_down/up', 'bit_diff', 'psnr_diff']
-    list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'rd_cost_org', ]
+    list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'sse_org', 'rd_cost_org', ]
 
     for each_id in list_id:
-        list_columns_raw += ['bit_'+each_id, 'psnr_'+each_id, 'rd_cost_'+each_id, ]
+        list_columns_raw += ['bit_'+each_id, 'psnr_'+each_id, 'sse_'+each_id, 'rd_cost_'+each_id, ]
     for each_id in list_id:
         list_columns_raw += ['rd_cost_diff_'+each_id, ]
 
@@ -102,18 +108,35 @@ if __name__ == '__main__':
 
     df_raw = pd.DataFrame(columns=list_columns_raw)
 
+    list_columns_summary = ['yuv_name',]
+    list_columns_summary += ['bit_org_sum', 'bitrate_org_sum', 'psnr_org_sum']
+    for each_id in list_id:
+        list_columns_summary += ['bit_'+each_id, 'bitrate_'+each_id, 'psnr_'+each_id]
+
+    # min
+    list_columns_summary += ['bit_min_sum', 'bitrate_min_sum', 'psnr_min_sum']
+
+    # min of down
+    list_columns_summary += ['bit_down_min_sum', 'bitrate_down_min_sum', 'psnr_down_min_sum']
+
+    df_summary = pd.DataFrame(columns=list_columns_summary)
+
+    df_min_id = pd.DataFrame()
+    df_down_min_id = pd.DataFrame()
+
     # input list
-    list_yuv_name = ['scene_53.yuv']
+    list_yuv_name = [
+        'scene_53.yuv',
+        'scene_54.yuv',
+    ]
     #list_yuv_name = sorted(glob.glob(os.path.join(path_label, "*.yuv")))
     #list_yuv_name = [os.path.basename(x) for x in sorted(glob.glob(os.path.join(path_label, "*.yuv")))]
-
-    # prefix
-    prefix_down_dec = 'decoder_bit_lcu_str_'
 
     # save each image's PSNR result as file.
     for idx, each_yuv in enumerate(list_yuv_name):
         #
         each_yuv_name, _ = each_yuv.split('.', 1)
+        df_raw_yuv = pd.DataFrame(columns=list_columns_raw)
 
         # diff label-HM
         each_label = os.path.join(path_label, each_yuv)
@@ -121,6 +144,8 @@ if __name__ == '__main__':
         df_psnr_label_rec, df_sse_label_rec, label_y, input_y_label_rec = yuv_diff_n_frame(each_label, start_frame, each_label_rec, start_frame, w_up, h_up, block_size_up, scale, frame_size)
 
         # get HR bitrate info
+        # prefix
+        prefix_down_dec = 'decoder_bit_lcu_str_'
         #bit_filename = '/home/kkheon/scripts/yuv_diff/dec/dec_hr/decoder_bit_lcu.txt'
         bit_filename = os.path.join(path_label_dec, prefix_down_dec + each_yuv_name + '.txt')
         df_bit_lcu_hr = parse_dec_bit_lcu(bit_filename)
@@ -247,6 +272,7 @@ if __name__ == '__main__':
                     each_df_bitrate_reshaped = pd.DataFrame(each_df_bitrate['bit'].values.reshape(h_up_in_block, w_up_in_block))
 
                     # Step 3 : 2x2 sum
+                    #print('before reshape = %d' % each_df_bitrate_reshaped.values.sum())
                     each_df_bitrate_reshaped[-2] = each_df_bitrate_reshaped.index / 2
                     each_df_bitrate_reshaped[-2] = each_df_bitrate_reshaped[-2].astype('int')
                     each_df_bitrate_reshaped = each_df_bitrate_reshaped.groupby(-2).sum()
@@ -255,6 +281,7 @@ if __name__ == '__main__':
                     each_df_bitrate_reshaped[-2] = each_df_bitrate_reshaped[-2].astype('int')
                     each_df_bitrate_reshaped = each_df_bitrate_reshaped.groupby(-2).sum()
                     each_df_bitrate_reshaped = each_df_bitrate_reshaped.transpose()
+                    #print('after reshape = %d' % each_df_bitrate_reshaped.values.sum())
 
                     # Step 4 : add to list
                     bitrate = each_df_bitrate_reshaped.iloc[y_in_block][x_in_block]
@@ -361,9 +388,9 @@ if __name__ == '__main__':
                     # to save the raw data
                     list_raw = [each_yuv, each_frame_index, x_up, y_up, ]
 
-                    list_raw += [bitrates[1], psnrs[1], list_rd_cost[1]]
+                    list_raw += [bitrates[1], psnrs[1], list_sse[1], list_rd_cost[1]]
                     for id_index, each_id in enumerate(list_id):
-                        list_raw += [bitrates[id_index+2], psnrs[id_index+2], list_rd_cost[id_index+2]]
+                        list_raw += [bitrates[id_index+2], psnrs[id_index+2], list_sse[id_index+2], list_rd_cost[id_index+2]]
 
                     # rd_cost_diff
                     for id_index, each_id in enumerate(list_id):
@@ -373,7 +400,7 @@ if __name__ == '__main__':
                     min_rd = np.min(list_rd_cost[1:])
                     argmin_rd = np.argmin(list_rd_cost[1:]) + 1
                     min_rd_r = bitrates[argmin_rd]
-                    min_rd_d = psnrs[argmin_rd]
+                    min_rd_d = list_sse[argmin_rd]
 
                     if argmin_rd == 1:
                         min_id = 'org'
@@ -387,7 +414,7 @@ if __name__ == '__main__':
                     min_rd = np.min(list_rd_cost[2:])
                     argmin_rd = np.argmin(list_rd_cost[2:]) + 2
                     min_rd_r = bitrates[argmin_rd]
-                    min_rd_d = psnrs[argmin_rd]
+                    min_rd_d = list_sse[argmin_rd]
                     min_id = list_id[argmin_rd-2]
 
                     # add id and r, d
@@ -403,13 +430,10 @@ if __name__ == '__main__':
             #draw_scatter_plot_from_df(scatter_plot_filename, df_raw_frm, 'bit_diff', 'psnr_diff')
 
             # append to total_df    : memory is available?
-            df_raw = df_raw.append(df_raw_frm)
+            df_raw_yuv = df_raw_yuv.append(df_raw_frm)
 
         # after each_yuv
-
-        # save df_raw as csv
-        filename_psnr = os.path.join(output_path, 'df_raw')
-        df_raw.to_csv(filename_psnr + '.txt', sep=' ')
+        df_raw = df_raw.append(df_raw_yuv)
 
         # from df_raw
         # 0. each mode's frame level average    => should I re-calculate this?
@@ -431,45 +455,79 @@ if __name__ == '__main__':
         #list_columns_raw += ['min_id', 'min_r', 'min_d', ]
         #list_columns_raw += ['down_min_id', 'down_min_r', 'down_min_d', ]
 
-        list_summary = []
-        list_columns_summary = []
+        list_summary = [each_yuv_name]
 
-        bit_org_sum = df_raw['bit_org'].sum()
-        psnr_org_sum = df_raw['psnr_org'].mean()
-        list_summary += [bit_org_sum, psnr_org_sum]
-        list_columns_summary += ['bit_org_sum', 'psnr_org_sum']
+        # to calcualte PSNR from SSE
+        img_size = h_up * w_up * frame_size
+        ref_value = 255.0 * 255.0
+
+        # to calculate bitrate from bit
+        # Double dScale   = dFps / 1000 / (Double)m_uiNumPic;
+        # bits / dScale
+
+        dscale = fps / 1000 / frame_size
+
+        bit_sum = df_raw_yuv['bit_org'].sum()
+        bitrate_sum = bit_sum * dscale
+        sse_sum = df_raw_yuv['sse_org'].sum()
+        psnr_sum = mse_to_psnr(ref_value, sse_sum / img_size)
+
+        list_summary += [bit_sum, bitrate_sum, psnr_sum]
 
         for each_id in list_id:
-            list_summary += [df_raw['bit_'+each_id].sum(), df_raw['psnr_'+each_id].mean()]
-            list_columns_summary += ['bit_'+each_id, 'psnr_'+each_id]
+            bit_sum = df_raw_yuv['bit_'+each_id].sum()
+            bitrate_sum = bit_sum * dscale
+            sse_sum = df_raw_yuv['sse_'+each_id].sum()
+            psnr_sum = mse_to_psnr(ref_value, sse_sum / img_size)
+            list_summary += [bit_sum, bitrate_sum, psnr_sum]
 
-        bit_min_sum = df_raw['min_r'].sum()
-        psnr_min_sum = df_raw['min_d'].mean()
-        list_summary += [bit_min_sum, psnr_min_sum]
-        list_columns_summary += ['bit_min_sum', 'psnr_min_sum']
+        # min
+        bit_sum = df_raw_yuv['min_r'].sum()
+        bitrate_sum = bit_sum * dscale
+        sse_sum = df_raw_yuv['min_d'].sum()
+        psnr_sum = mse_to_psnr(ref_value, sse_sum / img_size)
+        list_summary += [bit_sum, bitrate_sum, psnr_sum]
 
-        bit_down_min_sum = df_raw['down_min_r'].sum()
-        psnr_down_min_sum = df_raw['down_min_d'].mean()
-        list_summary += [bit_down_min_sum, psnr_down_min_sum]
-        list_columns_summary += ['bit_down_min_sum', 'psnr_down_min_sum']
+        # min of down
+        bit_sum = df_raw_yuv['down_min_r'].sum()
+        bitrate_sum = bit_sum * dscale
+        sse_sum = df_raw_yuv['down_min_d'].sum()
+        psnr_sum = mse_to_psnr(ref_value, sse_sum / img_size)
+        list_summary += [bit_sum, bitrate_sum, psnr_sum]
 
-        df_summary = pd.DataFrame([list_summary], columns=list_columns_summary)
-
-        filename_summary = os.path.join(output_path, 'df_raw_summary')
-        df_summary.to_csv(filename_summary + '.txt', sep=' ')
-
+        # list_summary to df
+        df_summary = df_summary.append(pd.DataFrame([list_summary], columns=list_columns_summary))
 
         # mode ratio using groupby
         # 1. count
-        stat_min_id = df_raw.groupby('min_id').count()
-        print(stat_min_id)
-        # but don't need more than count
+        #stat_min_id = df_raw_yuv.groupby('min_id').count()
+        #stat_min_id = df_raw_yuv.groupby('min_id').size().reset_index(name='counts')
+        each_df_min_id = df_raw_yuv.groupby('min_id').size().to_frame(name=each_yuv_name)
+        df_min_id = pd.concat([df_min_id, each_df_min_id[each_yuv_name]], axis=1)
 
-        filename_min_id = os.path.join(output_path, 'df_raw_min_id')
-        stat_min_id.to_csv(filename_min_id + '.txt', sep=' ')
+        each_df_down_min_id = df_raw_yuv.groupby('down_min_id').size().to_frame(name=each_yuv_name)
+        df_down_min_id = pd.concat([df_down_min_id, each_df_down_min_id[each_yuv_name]], axis=1)
 
-        #stat_down_min_id = df_raw.groupby('down_min_id').count()
-        #filename_min_id = os.path.join(output_path, 'df_raw_min_id_down')
-        #stat_down_min_id.to_csv(filename_min_id + '.txt', sep=' ')
 
+    # after yuv-loop
+
+    # save df_raw as csv
+    filename_psnr = os.path.join(output_path, 'df_raw')
+    df_raw.to_csv(filename_psnr + '.txt', sep=' ')
+
+
+    # add avg row
+    df_summary.loc['mean'] = df_summary.mean()
+    filename_summary = os.path.join(output_path, 'df_raw_summary')
+    df_summary.to_csv(filename_summary + '.txt', sep=' ')
+
+    df_min_id['mean'] = df_min_id.mean(axis=1)
+    df_min_id['ratio'] = df_min_id['mean'] / df_min_id['mean'].sum()
+    filename_min_id = os.path.join(output_path, 'df_raw_min_id')
+    df_min_id.to_csv(filename_min_id + '.txt', sep=' ')
+
+    df_down_min_id['mean'] = df_down_min_id.mean(axis=1)
+    df_down_min_id['ratio'] = df_down_min_id['mean'] / df_down_min_id['mean'].sum()
+    filename_down_min_id = os.path.join(output_path, 'df_raw_down_min_id')
+    df_down_min_id.to_csv(filename_down_min_id + '.txt', sep=' ')
 
