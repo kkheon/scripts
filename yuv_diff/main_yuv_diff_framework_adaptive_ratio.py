@@ -24,8 +24,8 @@ import math
 
 if __name__ == '__main__':
     # options
-    do_plot_framework_diff = True
-    #do_plot_framework_diff = False
+    #do_plot_framework_diff = True
+    do_plot_framework_diff = False
 
     # settings
     output_path = "./result_diff_framework_adaptive_ratio"
@@ -43,6 +43,14 @@ if __name__ == '__main__':
 
     start_frame = 0
     frame_size = 5
+    # for QP 32, 35, 34, 35, 33
+    list_lambda = [
+        49.222131819429933,
+        360.15632358170024,
+        273.42773026923868,
+        360.15632358170024,
+        73.983999999999995,
+    ]
 
 
     # input 1 : label, High Resolution(HR)
@@ -81,10 +89,12 @@ if __name__ == '__main__':
 
     # dataframe for saving raw data
     #list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'bit_down/up', 'psnr_down/up', 'bit_diff', 'psnr_diff']
-    list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', ]
+    list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'rd_cost_org', ]
 
     for each_id in list_id:
-        list_columns_raw += ['bit_'+each_id, 'psnr_'+each_id, ]
+        list_columns_raw += ['bit_'+each_id, 'psnr_'+each_id, 'rd_cost_'+each_id, ]
+    for each_id in list_id:
+        list_columns_raw += ['rd_cost_diff_'+each_id, ]
 
     df_raw = pd.DataFrame(columns=list_columns_raw)
 
@@ -112,6 +122,7 @@ if __name__ == '__main__':
         df_bit_lcu_hr = parse_dec_bit_lcu(bit_filename)
 
         list_df_psnr_down_rec_up = []
+        list_df_sse_down_rec_up = []
         list_input_y_down_rec_up = []
         list_df_bit_lcu_lr =[]
 
@@ -140,6 +151,7 @@ if __name__ == '__main__':
 
             # append to list
             list_df_psnr_down_rec_up.append(df_psnr_down_rec_up)
+            list_df_sse_down_rec_up.append(df_sse_down_rec_up)
             list_input_y_down_rec_up.append(input_y_down_rec_up)
             list_df_bit_lcu_lr.append(df_bit_lcu_lr)
 
@@ -147,6 +159,9 @@ if __name__ == '__main__':
         w_in_block = int(w_up / block_size_up)
         for each_frame_index in range(0, frame_size):
             df_raw_frm = pd.DataFrame(columns=list_columns_raw)
+
+            # lambda for each frame
+            each_lambda = list_lambda[each_frame_index]
 
             # make a frame-level bitrate reshape
             list_df_bit_lcu_lr_frm = []
@@ -198,6 +213,8 @@ if __name__ == '__main__':
                     psnrs = [None, ]  # label, lr, enc(lr)
                     ssims = [None, ]
                     bitrates = [None, ]
+                    list_sse = [None, ]
+                    list_rd_cost = [None, ]
 
                     # plot single frame
                     #xlabels = ['ORG', 'LR', 'LR+HM', 'LR+HM+UP', 'ORG+HM']
@@ -239,6 +256,15 @@ if __name__ == '__main__':
                     bitrate = each_df_bitrate_reshaped.iloc[y_in_block][x_in_block]
                     bitrates.append(bitrate)
 
+                    # sse
+                    each_df_sse_down_rec_up = df_sse_label_rec.loc[df_sse_label_rec['frame'] == each_frame_index]
+                    each_block_sse_down_rec_up = each_df_sse_down_rec_up.iloc[y_in_block][x_in_block]
+                    list_sse.append(each_block_sse_down_rec_up)
+
+                    # rd cost
+                    each_rd_cost = each_block_sse_down_rec_up + each_lambda * bitrate
+                    list_rd_cost.append(each_rd_cost)
+
                     for i in range(0, n_target):
                         # psnr : LR+HM+UP
                         each_df_psnr_down_rec_up = list_df_psnr_down_rec_up[i].loc[list_df_psnr_down_rec_up[i]['frame'] == each_frame_index]
@@ -258,6 +284,15 @@ if __name__ == '__main__':
                         each_df_bitrate = list_df_bit_lcu_lr_frm[i]
                         bitrate = each_df_bitrate.iloc[y_in_block][x_in_block]
                         bitrates.append(bitrate)
+
+                        # sse
+                        each_df_sse_down_rec_up = list_df_sse_down_rec_up[i].loc[list_df_sse_down_rec_up[i]['frame'] == each_frame_index]
+                        each_block_sse_down_rec_up = each_df_sse_down_rec_up.iloc[y_in_block][x_in_block]
+                        list_sse.append(each_block_sse_down_rec_up)
+
+                        # rd cost
+                        each_rd_cost = each_block_sse_down_rec_up + each_lambda * bitrate
+                        list_rd_cost.append(each_rd_cost)
 
 
                     #====== saving option ======#
@@ -322,9 +357,13 @@ if __name__ == '__main__':
                     # to save the raw data
                     list_raw = [each_yuv, each_frame_index, x_up, y_up, ]
 
-                    list_raw += [bitrates[1], psnrs[1]]
+                    list_raw += [bitrates[1], psnrs[1], list_rd_cost[1]]
                     for id_index, each_id in enumerate(list_id):
-                        list_raw += [bitrates[id_index+2], psnrs[id_index+2]]
+                        list_raw += [bitrates[id_index+2], psnrs[id_index+2], list_rd_cost[id_index+2]]
+
+                    # rd_cost_diff
+                    for id_index, each_id in enumerate(list_id):
+                        list_raw += [list_rd_cost[id_index+2] - list_rd_cost[1]]
 
                     #list_raw += [ bitrate_diff_rate, psnr_diff ]
                     df_raw_frm = df_raw_frm.append(pd.DataFrame([list_raw], columns=list_columns_raw))
