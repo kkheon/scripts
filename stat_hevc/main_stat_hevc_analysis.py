@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
 
     list_dir = [
-        '/home/kkheon/VSR-Tensorflow-exp-8/data_vsr/val'
+        '/home/kkheon/VSR-Tensorflow-exp-8/data_vsr/val',
     ]
 
     list_qp = [

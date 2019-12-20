@@ -45,7 +45,11 @@ if __name__ == '__main__':
 
         #'/hdd2T/kkheon/result_mf_vcnn/v2_qp32_bugfixed'
         #'/hdd2T/kkheon/data_vsr_bak/val/v7_qp32'
-        '/home/kkheon/VSR-Tensorflow-exp5/data_vsr/val'
+        #'/home/kkheon/VSR-Tensorflow-exp-4/data_vsr/val'
+        #'/home/kkheon/VSR-Tensorflow-exp-7/data_vsr/val'
+        #'/home/kkheon/VSR-Tensorflow-exp-8/data_vsr/val'
+
+        '/home/kkheon/VSR-Tensorflow-exp-4-3_qp_offset/data_vsr/val'
     ]
 
     list_qp = [
@@ -141,7 +145,7 @@ if __name__ == '__main__':
         #df_merged.to_csv(r'/home/kkheon/VCNN-Tensorflow/data_vsr/val/df_merged.txt', header=None, index=None, sep=' ')
 
         filename_merged = os.path.join(each_dir, 'df_raw.txt')
-        #df_merged.to_csv(filename_merged, header=None, index=None, sep=' ')
+        #df_merged.to_csv(filename, header=None, index=None, sep=' ')
         df_merged.to_csv(filename_merged, index=None, sep=' ')
 
         # type change

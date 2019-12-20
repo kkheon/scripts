@@ -50,22 +50,40 @@ if __name__ == '__main__':
 
     path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val/result_QP32'
 
+    #=== depth-based analysis
     depth_range = range(4, 36, 4)
     target_layer = [
 #        'result_vdsr_4_bak_layer_4_lambda_0_depth/result_vdsr_4_layer_4_lambda_0_depth_',
         'result_vdsr_4_bak_layer_6_lambda_0_depth/result_vdsr_4_layer_6_lambda_0_depth_',
     ]
 
-
     list_path = []
+    list_id = []
     for each_target_layer in target_layer:
         for each_depth_range in depth_range:
-            list_path.append(each_target_layer + str(each_depth_range))
+            each_path = each_target_layer + str(each_depth_range)
+            list_path.append(each_path)
 
+            # generate id
+           # save psnr as id : each_path
+            _, id = each_path.split('/', 1)
+            _, id = id.split('vdsr_4_', 1)
+            list_id.append(id)
+
+
+    #=== just compare, then id is the problem.
     #list_path = [
     #    'result_vdsr_4_bak_layer_6_lambda_0_depth/result_vdsr_4_layer_6_lambda_0_depth_12',
     #    'result_vdsr_4_bak_layer_6_lambda_0_depth/result_vdsr_4_layer_6_lambda_0_depth_16',
     #]
+    list_path = [
+        'result_vdsr_4_layer_6_lambda_0',
+        'result_vdsr_4_layer_6_lambda_0_conv3x1',
+    ]
+    list_id = [
+        'conv_3x3',
+        'conv_3x1'
+    ]
 
     # input 1 : label, High Resolution(HR)
     path_label = '/home/kkheon/dataset/myanmar_v1_15frm/orig/scenes_yuv/val'
@@ -89,12 +107,15 @@ if __name__ == '__main__':
     list_yuv_name = [os.path.basename(x) for x in sorted(glob.glob(os.path.join(path_label, "scene_53.yuv")))]
 
     # diff label-LR-UP
-    for each_path in list_path:
+    for each_path_index, each_path in enumerate(list_path):
 
-        if 'layer' in each_path:
-            # save psnr as id : each_path
-            _, id = each_path.split('/', 1)
-            _, id = id.split('vdsr_4_', 1)
+        #if 'layer' in each_path:
+        #    # save psnr as id : each_path
+        #    _, id = each_path.split('/', 1)
+        #    _, id = id.split('vdsr_4_', 1)
+
+        if len(list_id) == len(list_path):
+            id = list_id[each_path_index]
         else:
             id = each_path
 
@@ -155,6 +176,9 @@ if __name__ == '__main__':
     df_raw['range'] = df_raw['max'] - df_raw['min']
 
 
+    # ols
+
+
     # to exclude some columns
     # df[df.columns.difference(['b'])]
 
@@ -182,4 +206,24 @@ if __name__ == '__main__':
     df_raw_range_10 = df_raw[df_raw['range'] > 1.0]
     filename_psnr = os.path.join(output_path, 'df_raw_range_10')
     df_raw_range_10.to_csv(filename_psnr + '.txt', sep=' ')
+
+
+    # temp for conv 3x3 vs conv 3x1
+    df_raw['diff'] = df_raw['conv_3x3'] - df_raw['conv_3x1']
+
+    # save based on diff
+    df_raw_diff_01 = df_raw[df_raw['diff'] > 0]
+    filename_psnr = os.path.join(output_path, 'df_raw_conv_3x3_is_better')
+    df_raw_diff_01.to_csv(filename_psnr + '.txt', sep=' ')
+
+    df_raw_diff = df_raw[df_raw['diff'] < 0]
+    filename_psnr = os.path.join(output_path, 'df_raw_conv_3x3_is_better')
+    df_raw_diff.to_csv(filename_psnr + '.txt', sep=' ')
+
+    list_diff_range = np.arange(0, -1, -0.1)
+    for each_diff_range in list_diff_range:
+        df_raw_diff = df_raw[df_raw['diff'] < each_diff_range]
+        filename_psnr = os.path.join(output_path, 'df_raw_conv_3x3_diff_' + "%.1f" % each_diff_range)
+        df_raw_diff.to_csv(filename_psnr + '.txt', sep=' ')
+
 

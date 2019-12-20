@@ -119,11 +119,11 @@ if __name__ == '__main__':
 
             ## df to file
             #filename_psnr = os.path.join(output_path, 'df_psnr_' + in_filename_frm)
-            #df_psnr.to_csv(filename_psnr + '.txt', sep=' ')
+            #df_psnr_a.to_csv(filename_psnr + '.txt', sep=' ')
 
             ## df to image
             #pyplot.figure(figsize=(20, 10))
-            #sns_plot = sns.heatmap(df_psnr, annot=True, vmin=20, vmax=80)
+            #sns_plot = sns.heatmap(df_psnr_a, annot=True, vmin=20, vmax=80)
             #fig = sns_plot.get_figure()
             #fig.savefig(filename_psnr + '.png')
 

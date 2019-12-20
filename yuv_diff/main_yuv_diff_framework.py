@@ -49,54 +49,33 @@ if __name__ == '__main__':
     start_frame = 0
     frame_size = 5
 
-    path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32'
-    path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32'
-
-    # input list
-    list_yuv_name = ['scene_53.yuv']
-    #list_yuv_name = sorted(glob.glob(os.path.join(path_label, "*.yuv")))
 
     # input 1 : label, High Resolution(HR)
-    #list_label = ['/home/kkheon/dataset/myanmar_v1_15frm/orig/scenes_yuv/val/scene_53.yuv']
     path_label = '/home/kkheon/dataset/myanmar_v1_15frm/orig/scenes_yuv/val'
     # input 2 : HR's HM result
-    #list_label_rec = ['/home/kkheon/dataset/myanmar_v1/orig_hm/val/QP32/rec_scene_53.yuv']
     path_label_rec = '/home/kkheon/dataset/myanmar_v1/orig_hm/val/QP32'
     prefix_label_rec = 'rec_'
 
+    #path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32'
+    path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32'
+
     # input 3 : LR
-    #list_down = ['/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32/result_mf_vcnn_down_3/mf_vcnn_down_scene_53.yuv']
     path_down = path_target + '/result_mf_vcnn_down_3'
     prefix_down = 'mf_vcnn_down_'
     # input 4 : LR's HM result
-    #list_down_rec = ['/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_down_3_hm/QP32/rec_mf_vcnn_down_scene_53.yuv']
-    #path_down_rec = '/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_down_3_hm/QP32'
     path_down_rec = path_down + '_hm/QP32'
     prefix_down_rec = 'rec_mf_vcnn_down_'
     # input 5 : LR's HM result + up
-    #list_down_rec_up = ['/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_up_4/QP32/mf_vcnn_up_rec_mf_vcnn_down_scene_53.yuv']
-    #path_down_rec_up = '/data/kkheon/data_vsr_bak/val/val_t1_mf1_vcnn_fixed_ipppp/result_QP32/result_mf_vcnn_up_4/QP32'
     path_down_rec_up = path_target + '/result_mf_vcnn_up_4/QP32'
     prefix_down_rec_up = 'mf_vcnn_up_rec_mf_vcnn_down_'
 
     # input 6 : LR's decoder_bit_lcu
-    #path_down_dec = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32/result_mf_vcnn_down_3_hm/QP32_dec'
     path_down_dec = path_down_rec + '_dec'
     prefix_down_dec = 'decoder_bit_lcu_str_mf_vcnn_down_'
 
     # input 7 : HR's decoder_bit_lcu
     path_label_dec = path_label_rec + '_dec'
     prefix_label_dec = 'decoder_bit_lcu_str_'
-
-    ## path setting
-    #list_label = sorted(glob.glob(os.path.join(label_path, "*.yuv")))
-    #list_input = sorted(glob.glob(os.path.join(input_path, "*.yuv")))
-
-    # hm result
-    #list_input = ['/home/kkheon/HM-16.9_CNN/bin/data_vsr/test/label_hm_arcnn/QP32/rec_BasketballDrive.yuv']
-
-    # bit info
-    #list_dec_bit_lcu = ['/home/kkheon/scripts/yuv_diff/dec/decoder_bit_lcu.txt']
 
     # check of out_dir existence
     if not os.path.exists(output_path):
@@ -105,6 +84,11 @@ if __name__ == '__main__':
     # dataframe for saving raw data
     list_columns_raw = ['img_name', 'frame_idx', 'x', 'y', 'bit_org', 'psnr_org', 'bit_down/up', 'psnr_down/up', 'bit_diff', 'psnr_diff']
     df_raw = pd.DataFrame(columns=list_columns_raw)
+
+    # input list
+    #list_yuv_name = ['scene_53.yuv']
+    #list_yuv_name = sorted(glob.glob(os.path.join(path_label, "*.yuv")))
+    list_yuv_name = [os.path.basename(x) for x in sorted(glob.glob(os.path.join(path_label, "*.yuv")))]
 
     # save each image's PSNR result as file.
     for idx, each_yuv in enumerate(list_yuv_name):

@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import numpy as np
 
-class stat_psnr(object):
+class stat_psnr_summary(object):
 
     def __init__(self, filename, id_type=None):
 
@@ -11,11 +11,12 @@ class stat_psnr(object):
         self.parse_psnr(filename)
 
         # gen id : video + qp
-        self.df_frame['name'] = self.video_name
+        #self.df_frame['name'] = self.video_name
         self.df_frame['qp'] = self.qp
+        self.df_frame['epoch'] = self.epoch
 
         # add id to table
-        # 
+        #
         if id_type == 'name_qp_frm':
             self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
         else:
@@ -27,23 +28,24 @@ class stat_psnr(object):
 
     def parse_filename(self, filename):
 
-        path, name = filename.rsplit('/', 1)
-        name, _ = name.split('.', 1)
-        if 'vcnn_down_' in name:
-          _, name = name.split('vcnn_down_', 1)
-        else:
-          _, name = name.split('rec_', 1)
-
-        self.video_name = name
+        path, filename = filename.rsplit('/', 1)
+        name, _ = filename.split('.', 1)
 
         if 'up' in name:
-            list_numbers = re.findall('up_[0-9]+', path)
+            list_numbers = re.findall('up_[0-9]+', name)
         else:
-            list_numbers = re.findall('_[0-9]+', path)
+            list_numbers = re.findall('_[0-9]+', name)
         _, self.loop_idx = list_numbers[0].split('_', 1)
 
-        _, qp = path.rsplit('QP', 1)
+        # QP
+        list_qp = re.findall('QP[0-9]+', filename)
+        _, qp = list_qp[0].rsplit('QP', 1)
         self.qp = qp
+
+        # epoch
+        list_epoch = re.findall('epoch_[0-9]+', filename)
+        _, epoch = list_epoch[0].rsplit('_', 1)
+        self.epoch = epoch
 
 
     def parse_psnr(self, filename):
@@ -54,9 +56,21 @@ class stat_psnr(object):
         data = f.readlines()
 
         for each_line in data:
-            if 'Frm' in each_line:
-                list_numbers = re.findall('[.0-9]+', each_line)
-                self.list_frame.append(list_numbers)
+            if 'label' in each_line:
+                # split
+                each_line_name, each_line_numbers = each_line.split('frame', 1)
+
+                # name
+                list_name = re.findall('[_A-z]+.yuv', each_line_name)
+                name, _ = list_name[0].split('.', 1)
+
+                # PSNR
+                list_numbers = re.findall('[.0-9]+', each_line_numbers)
+
+                #
+                list_numbers[0] = str(int(list_numbers[0]))
+
+                self.list_frame.append([name] + list_numbers)
 
         f.close()
 
@@ -64,9 +78,10 @@ class stat_psnr(object):
         self.df_frame = pd.DataFrame(self.list_frame)
 
         # select essential columns
-        self.df_frame = self.df_frame[[0, 2, 4]]
+        self.df_frame = self.df_frame[[0, 1, 2, 4, 3, 5]]
 
         # add column name
-        self.df_frame.columns = ['frm', 'psnr_y_up', 'ssim_up']
+        self.df_frame.columns = ['name', 'frm', 'psnr_y_up_bicubic', 'ssim_up_bicubic', 'psnr_y_up', 'ssim_up']
+
 
 

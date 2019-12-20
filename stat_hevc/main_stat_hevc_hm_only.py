@@ -57,14 +57,22 @@ if __name__ == '__main__':
         #'/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val'
 
         #'/data/kkheon/test_HM16.9_cost_adaptation/result_val_mf_vcnn_down_4_hm_adap_dist_only'
-        '/home/kkheon/VSR-Tensorflow-exp-4-3/data_vsr/val/result_QP32/result_mf_vcnn_down_4_hm'
+        #'/home/kkheon/VSR-Tensorflow-exp-4-3/data_vsr/val/result_QP32/result_mf_vcnn_down_4_hm'
+
+        #'/home/kkheon/HM-16.9_CNN/bin/data_vsr/test/label_hm_arcnn'
+        #'/data/kkheon/dataset/hevc_ctc/ClassB_1072p_hm'
+
+        '/data/kkheon/dataset/SJTU_4K_test/label_hm',
+        '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_1080_hm',
+        '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_720_hm',
+        '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm',
     ]
 
     list_qp = [
         'QP32'
-       #,'QP37'
-       #,'QP42'
-       #,'QP47'
+       ,'QP37'
+       ,'QP42'
+       ,'QP47'
     ]
 
     #
@@ -149,8 +157,8 @@ if __name__ == '__main__':
         df_down[['psnr_y']] = df_down[['psnr_y']].astype(float)
 
         ## to_file
-        #filename_down = os.path.join(each_dir, 'df_down.txt')
-        #df_down.to_csv(filename_down, sep=' ')
+        filename_down = os.path.join(each_dir, 'df_down.txt')
+        df_down.to_csv(filename_down, sep=' ')
 
         # frame-level average
         #df_frame_level = df_down.groupby(['loop', 'frm', 'qp']).mean()

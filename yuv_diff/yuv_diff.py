@@ -134,8 +134,11 @@ def yuv_diff_n_frame(filename_label, start_frame_label, filename_input, start_fr
                 sub_input_y_pel = input_y_pel[frame_index, y:y+block_size, x:x+block_size]
 
                 # SSE
+                #each_sse = np.sum((sub_label_y_pel - sub_input_y_pel) ** 2)
                 each_sse = np.sum((sub_label_y_pel - sub_input_y_pel) ** 2)
-                list_sse_row.append(float("{0:.4f}".format(each_sse)))
+
+                #list_sse_row.append(float("{0:.4f}".format(each_sse)))
+                list_sse_row.append(each_sse)
 
                 block_count += 1
 
@@ -161,7 +164,7 @@ def yuv_diff_n_frame(filename_label, start_frame_label, filename_input, start_fr
 
     return df_psnr, df_sse, label_y_pel, input_y_pel
 
-def yuv_diff_n_frame(label_y, input_y, w, h, block_size, scale):
+def yuv_diff_single_frame(label_y, input_y, w, h, block_size, scale):
 
     # normalization
     label_y = label_y / 255.

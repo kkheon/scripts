@@ -125,12 +125,12 @@ if __name__ == '__main__':
     df_down_min_id = pd.DataFrame()
 
     # input list
-    list_yuv_name = [
-        'scene_53.yuv',
-        'scene_54.yuv',
-    ]
+    #list_yuv_name = [
+    #    'scene_53.yuv',
+    #    'scene_54.yuv',
+    #]
     #list_yuv_name = sorted(glob.glob(os.path.join(path_label, "*.yuv")))
-    #list_yuv_name = [os.path.basename(x) for x in sorted(glob.glob(os.path.join(path_label, "*.yuv")))]
+    list_yuv_name = [os.path.basename(x) for x in sorted(glob.glob(os.path.join(path_label, "*.yuv")))]
 
     # save each image's PSNR result as file.
     for idx, each_yuv in enumerate(list_yuv_name):

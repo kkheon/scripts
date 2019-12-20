@@ -21,11 +21,13 @@ if __name__ == '__main__':
     input_path = "./data_vsr/val/label"
     output_path = "./result_diff_temporal"
 
-    #w = 3840
-    #h = 2160
-    w = 1920
-    #h = 1072
-    h = 1080
+    w = 3840
+    h = 2160
+
+    #w = 1920
+    #h = 1080
+
+    ##h = 1072
 
     block_size = 64
     #block_size = 128
@@ -41,11 +43,11 @@ if __name__ == '__main__':
     #list_input = sorted(glob.glob(os.path.join(input_path, "*.yuv")))
 
 
-    # hm result
-    #list_input = ['/home/kkheon/HM-16.9_CNN/bin/data_vsr/test/label_hm_arcnn/QP32/rec_BasketballDrive.yuv']
+    ## hm result
+    list_input_lr = ['/data/kkheon/dataset/myanmar_v1/orig_hm/val/QP32/rec_scene_53.yuv']
 
     # down-sampling data
-    list_input = ['/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32/result_mf_vcnn_down_3/mf_vcnn_down_scene_53.yuv']
+    #list_input_lr = ['/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32/result_mf_vcnn_down_3/mf_vcnn_down_scene_53.yuv']
 
     # bit info
     #list_dec_bit_lcu = ['/home/kkheon/scripts/yuv_diff/dec/decoder_bit_lcu.txt']
@@ -55,15 +57,19 @@ if __name__ == '__main__':
         os.makedirs(output_path)
 
     # save each image's PSNR result as file.
-    for idx, each_image in enumerate(list_input):
-        each_input = list_input[idx]
+    for idx, each_image in enumerate(list_input_lr):
+        each_input = list_input_lr[idx]
 
         list_df_psnr, list_df_ssim, input_y = yuv_diff_temporal(each_input, start_frame, w, h, frame_size, block_size, scale)
 
         # get bitrate info
         # assumption : bit info file is already generated.
-        bit_filename = '/home/kkheon/scripts/yuv_diff/dec/decoder_bit_lcu.txt'
-        df_dec_bit_lcu = parse_dec_bit_lcu(bit_filename)
+        #bit_filename = '/home/kkheon/scripts/yuv_diff/dec/dec_lr/decoder_bit_lcu.txt'
+        #df_bit_lcu_lr = parse_dec_bit_lcu(bit_filename)
+
+        ## get bitrate info of HR
+        bit_filename = '/home/kkheon/scripts/yuv_diff/dec/dec_hr/decoder_bit_lcu.txt'
+        df_bit_lcu_lr = parse_dec_bit_lcu(bit_filename)
 
         # save block-image
         w_in_block = int(w / block_size)
@@ -92,7 +98,7 @@ if __name__ == '__main__':
                 bitrates = []
                 for each_frame_index in range(0, frame_size):
                     # bitrate
-                    each_df_bitrate = df_dec_bit_lcu.loc[df_dec_bit_lcu['frame'] == each_frame_index]
+                    each_df_bitrate = df_bit_lcu_lr.loc[df_bit_lcu_lr['frame'] == each_frame_index]
                     block_index = y_in_block * w_in_block + x_in_block
                     bitrate = each_df_bitrate.iloc[block_index]
                     bitrates.append(bitrate['bit'])
@@ -104,19 +110,30 @@ if __name__ == '__main__':
                     result_imgs.append(input_y[each_frame_index, y:y+block_size, x:x+block_size])
                     xlabels.append(start_frame + each_frame_index)
 
-                # separate dir depending on PSNR
-                psnr_diff = np.mean(psnrs[1:])
-                if math.isinf(psnr_diff):
-                    psnr_diff = 99.0
-                psnr_diff_floor = math.floor(psnr_diff)
-                str_psnr_diff_floor = str(psnr_diff_floor)
-                output_path_psnr = os.path.join(output_path, 'group_psnr_' + str_psnr_diff_floor)
+                ## separate dir depending on PSNR
+                #psnr_diff = np.mean(psnrs[1:])
+                #if math.isinf(psnr_diff):
+                #    psnr_diff = 99.0
+                #psnr_diff_floor = math.floor(psnr_diff)
+                #str_psnr_diff_floor = str(psnr_diff_floor)
+                #output_path_group = os.path.join(output_path, 'group_psnr_' + str_psnr_diff_floor)
 
-                if not os.path.exists(output_path_psnr):
-                    os.makedirs(output_path_psnr)
+                ## separate dir depending on bitrates
+                #bitrates_diff = np.mean(bitrates[1:])
+                #if math.isinf(bitrates_diff):
+                #    bitrates_diff = 9999
+                #bitrates_diff_floor = math.floor(bitrates_diff)
+                #str_bitrates_diff_floor = str(bitrates_diff_floor)
+                #output_path_group = os.path.join(output_path, 'group_bitrates_' + str_bitrates_diff_floor)
+
+                # no separate
+                output_path_group = os.path.join(output_path, 'group_0')
+
+                if not os.path.exists(output_path_group):
+                    os.makedirs(output_path_group)
 
                 #plot_psnr_diff(result_imgs, psnrs, idx, x, y, save_dir=output_path_psnr)
-                plot_ssim_diff(result_imgs, psnrs, ssims, bitrates, xlabels, idx, x, y, save_dir=output_path_psnr)
+                plot_ssim_diff(result_imgs, psnrs, ssims, bitrates, xlabels, idx, x, y, save_dir=output_path_group)
 
 
 

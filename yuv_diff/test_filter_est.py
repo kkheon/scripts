@@ -76,8 +76,8 @@ h_up = 2160
 
 scale = 2
 
-block_size = 64
-#block_size = 16
+#block_size = 64
+block_size = 16
 block_size_up = block_size * scale
 
 w_up_in_block = math.ceil(w_up / block_size)
@@ -85,6 +85,7 @@ h_up_in_block = math.ceil(h_up / block_size)
 
 start_frame = 0
 frame_size = 1
+#frame_size = 5
 
 path_target = '/home/kkheon/VSR-Tensorflow-exp-mf1/data_vsr/val_mf1/result_QP32'
 path_down = path_target + '/result_mf_vcnn_down_3'
@@ -100,7 +101,15 @@ path_down_rec_up = path_target + '/result_mf_vcnn_up_4/QP32'
 prefix_down_rec_up = 'mf_vcnn_up_rec_mf_vcnn_down_'
 
 # input list
-list_yuv_name = ['scene_53.yuv']
+#list_yuv_name = ['scene_53.yuv']
+list_yuv_name = [
+      'scene_53.yuv'
+    #, 'scene_54.yuv'
+    #, 'scene_55.yuv'
+    #, 'scene_56.yuv'
+    #, 'scene_57.yuv'
+    #, 'scene_58.yuv'
+]
 #list_yuv_name = sorted(glob.glob(os.path.join(path_label, "*.yuv")))
 #list_yuv_name = [os.path.basename(x) for x in sorted(glob.glob(os.path.join(path_label, "*.yuv")))]
 
@@ -158,10 +167,21 @@ list_columns_raw = ['img_name', 'frame_idx', 'x', 'y',
                     'psnr_bicubic_up', 'psnr_diff',
                     #'psnr_bicubic_up_scipy', 'psnr_bicubic_up_matlab']
                     'psnr_bicubic_up_scipy']
+
 df_raw = pd.DataFrame(columns=list_columns_raw)
+
+list_columns_summary = ['img_name', 'frame_idx',
+                        'psnr_cnn_up_frame',
+                        'psnr_pred_from_cnn_frame',
+                        'psnr_pred_from_label_frame',
+                        'psnr_bicubic_frame']
+df_summary = pd.DataFrame(columns=list_columns_summary)
 
 # save each image's PSNR result as file.
 for idx, each_yuv in enumerate(list_yuv_name):
+    # parse yuv_name
+    each_yuv_name, _ = each_yuv.split('.', 1)
+
     # load label
     each_label = os.path.join(path_label, each_yuv)
     array_label_y, array_label_cbcr = read_yuv420(each_label, w_up, h_up, frame_size, start_frame=start_frame)
@@ -180,11 +200,23 @@ for idx, each_yuv in enumerate(list_yuv_name):
 
     # compare 0 : HR
     # compare 1 : LR+HM+bicubic_UP
+    #w_in_block = int(w / block_size)
+    #h_in_block = int(h / block_size)
 
-    w_in_block = int(w / block_size)
-    h_in_block = int(h / block_size)
+    # temp
+    w_in_block = int(1920 / block_size)
+    h_in_block = int(1024 / block_size)
+
+    w_in_block_target = w_in_block * block_size * scale
+    h_in_block_target = h_in_block * block_size * scale
 
     for each_frame_index in range(0, frame_size):
+
+        # frame-level empty array
+        pred_from_cnn_frame = np.empty(shape=(h_in_block_target, w_in_block_target))
+        pred_from_label_frame = np.empty(shape=(h_in_block_target, w_in_block_target))
+        bicubic_frame = np.empty(shape=(h_in_block_target, w_in_block_target))
+
         df_raw_frm = pd.DataFrame(columns=list_columns_raw)
         input_y_down_rec_frame = input_y_down_rec[each_frame_index, :, :]
 
@@ -276,6 +308,10 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 #bicubic_block_2d = bicubic_interpolation2(xx, yy, data_padded, xx_new, yy_new)
                 #bicubic_block_2d = bicubic_block_2d[4:4+128, 4:4+128]
 
+                # append to frame-level array
+                pred_from_cnn_frame[y_up:y_up+block_size_up, x_up:x_up+block_size_up] = pred_block_2d
+                pred_from_label_frame[y_up:y_up+block_size_up, x_up:x_up+block_size_up] = pred_block_2d_from_label
+                bicubic_frame[y_up:y_up+block_size_up, x_up:x_up+block_size_up] = bicubic_block_2d
 
                 # block-level comparision
                 # diff with label
@@ -333,7 +369,8 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 # separate dir depending on PSNR
                 # psnr diff
                 #psnr_diff = psnr_bicubic_up_pred - psnr_bicubic_up
-                psnr_diff = psnr_bicubic_up - psnr_bicubic_up_scipy
+                #psnr_diff = psnr_bicubic_up - psnr_bicubic_up_scipy
+                psnr_diff = psnr_pred_a_from_label - psnr_cnn_up
 
                 if math.isinf(psnr_diff):
                     psnr_diff = 99.0
@@ -345,7 +382,7 @@ for idx, each_yuv in enumerate(list_yuv_name):
                 if not os.path.exists(output_path_psnr):
                     os.makedirs(output_path_psnr)
 
-                #plot_diff(imgs, psnrs, xlabels, idx, each_frame_index, x, y, save_dir=output_path_psnr)
+                plot_diff(imgs, psnrs, xlabels, idx, each_frame_index, x, y, save_dir=output_path_psnr)
 
                 # to save the raw data
                 list_raw = [[each_yuv, each_frame_index, x, y,
@@ -360,8 +397,39 @@ for idx, each_yuv in enumerate(list_yuv_name):
         # append to total_df
         df_raw = df_raw.append(df_raw_frm)
 
+        # frame-level PSNR
+        cnn_up_frame = input_y_down_rec_up[each_frame_index, 0:h_in_block_target, 0:w_in_block_target]
+        label_frame = label_y[each_frame_index, 0:h_in_block_target, 0:w_in_block_target]
+
+        psnr_cnn_up_frame = psnr(cnn_up_frame / 255., label_frame / 255., 0)
+        psnr_pred_from_cnn_frame = psnr(pred_from_cnn_frame / 255., label_frame / 255., 0)
+        psnr_pred_from_label_frame = psnr(pred_from_label_frame / 255., label_frame / 255., 0)
+        psnr_bicubic_frame = psnr(bicubic_frame / 255., label_frame / 255., 0)
+
+        # frame-level df
+        list_summary_frm = [[each_yuv, each_frame_index,
+                    psnr_cnn_up_frame,
+                    psnr_pred_from_cnn_frame,
+                    psnr_pred_from_label_frame,
+                    psnr_bicubic_frame
+                    ]]
+        df_summary = df_summary.append(pd.DataFrame(list_summary_frm, columns=list_columns_summary))
+
+        # save each frame
+        output_path_frame = os.path.join(output_path, 'frame_level')
+        if not os.path.exists(output_path_frame):
+            os.makedirs(output_path_frame)
+
+        filename_img_prefix = os.path.join(output_path_frame, each_yuv_name + '_frm_' + str(each_frame_index))
+        misc.imsave(filename_img_prefix + '_cnn_up' + '.png', cnn_up_frame)
+        misc.imsave(filename_img_prefix + '_pred_from_cnn_up' + '.png', pred_from_cnn_frame)
+        misc.imsave(filename_img_prefix + '_pred_from_label' + '.png', pred_from_label_frame)
+        misc.imsave(filename_img_prefix + '_bicubic' + '.png', bicubic_frame)
+
 
 # save df_raw as csv
 filename_psnr = os.path.join(output_path, 'df_raw')
 df_raw.to_csv(filename_psnr + '.txt', sep=' ')
 
+filename_summary = os.path.join(output_path, 'df_summary')
+df_summary.to_csv(filename_summary + '.txt', sep=' ')
