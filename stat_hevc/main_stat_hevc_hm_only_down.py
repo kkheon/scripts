@@ -11,17 +11,17 @@ from stat_psnr_summary import stat_psnr_summary as stat_psnr
 if __name__ == '__main__':
 
     list_dir = [
-        '/data/kkheon/dataset/SJTU_4K_test/label_hm',
+        #'/data/kkheon/dataset/SJTU_4K_test/label_hm',
         '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_1080_hm',
         '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_720_hm',
-        #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm',
+        '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm',
     ]
 
     list_dir_up = [
-        '',
+        #'',
         '/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_1080',
         '/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_720',
-        #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_544',
+        '/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_544',
     ]
     list_qp = [
         'QP32'
@@ -101,7 +101,10 @@ if __name__ == '__main__':
                     df_up = df_up.append(each_frame_table)
 
         #===== save path =====#
-        out_dir = each_dir_up
+        if each_dir_up == '':   # for label, there is no dir_up, so I give them their own path.
+            out_dir = each_dir
+        else:
+            out_dir = each_dir_up
         #out_dir = each_dir
 
         #===== save df_down =====#
@@ -120,6 +123,13 @@ if __name__ == '__main__':
         # to_file
         filename_down = os.path.join(out_dir, 'df_down_frame_avg.txt')
         df_frame_level.to_csv(filename_down, sep=' ')
+
+        # video-level average
+        df_video_level = df_down.groupby(['name', 'qp']).mean()
+
+        # to_file
+        filename_merged = os.path.join(out_dir, 'df_down_video_avg.txt')
+        df_video_level.to_csv(filename_merged, sep=' ')
 
         # check empty of df_up
         if df_up.empty == True:
@@ -147,6 +157,7 @@ if __name__ == '__main__':
 
         # type change
         df_merged[['psnr_y_up', 'ssim_up']] = df_merged[['psnr_y_up', 'ssim_up']].astype(float)
+        df_merged[['psnr_y_up_bicubic', 'ssim_up_bicubic']] = df_merged[['psnr_y_up_bicubic', 'ssim_up_bicubic']].astype(float)
 
         # frame-level average
         df_frame_level = df_merged.groupby(['loop', 'epoch', 'frm', 'qp']).mean()
@@ -155,7 +166,6 @@ if __name__ == '__main__':
         filename_merged = os.path.join(out_dir, 'df_frame_avg.txt')
         df_frame_level.to_csv(filename_merged, sep=' ')
 
-
         # video-level average
         df_video_level = df_merged.groupby(['loop', 'epoch', 'name', 'qp']).mean()
 
@@ -163,6 +173,12 @@ if __name__ == '__main__':
         filename_merged = os.path.join(out_dir, 'df_video_avg.txt')
         df_video_level.to_csv(filename_merged, sep=' ')
 
+        # qp-level average
+        df_qp_level = df_merged.groupby(['loop', 'epoch', 'qp']).mean()
+
+        # to_file
+        filename_merged = os.path.join(out_dir, 'df_qp_avg.txt')
+        df_qp_level.to_csv(filename_merged, sep=' ')
 
 
 
