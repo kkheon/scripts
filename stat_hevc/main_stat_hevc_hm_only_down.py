@@ -4,30 +4,49 @@ import glob
 import pandas as pd
 import re
 
+import json
+
 from stat_hevc import stat_hevc
 from stat_psnr_summary import stat_psnr_summary as stat_psnr
+from stat_vmaf import stat_vmaf
 
 
 if __name__ == '__main__':
 
     list_dir = [
-        #'/data/kkheon/dataset/SJTU_4K_test/label_hm',
-        '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_1080_hm',
-        '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_720_hm',
-        '/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm',
+        '/data/kkheon/dataset/SJTU_4K_test/label_hm',
+        #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_1080_hm',
+        #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_720_hm',
+        #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm',
     ]
 
     list_dir_up = [
-        #'',
-        '/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_1080',
-        '/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_720',
-        '/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_544',
+        '',
+        #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_1080',
+        #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_720',
+        #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_544',
     ]
     list_qp = [
-        'QP32'
-       ,'QP37'
-       ,'QP42'
-       ,'QP47'
+        'QP22',
+        'QP27',
+        'QP32',
+        'QP37',
+        'QP42',
+        'QP47',
+    ]
+
+    # json file dir
+    list_dir_filter_vmaf = [
+        '/home/kkheon/vmaf_test/SJTU_4K_test_vmaf',
+        #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_1080_to_2160_vmaf',
+        #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_720_to_2160_vmaf',
+        #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_544_to_2160_vmaf',
+    ]
+    list_dir_vdsr_vmaf = [
+        '',
+        #'/home/kkheon/vmaf_test/lanczos_2160_to_1080_vmaf',
+        #'/home/kkheon/vmaf_test/lanczos_2160_to_720_vmaf',
+        #'/home/kkheon/vmaf_test/lanczos_2160_to_544_vmaf',
     ]
 
     #
@@ -62,9 +81,14 @@ if __name__ == '__main__':
     for i, each_dir in enumerate(list_dir):
         df_down = pd.DataFrame()
         df_up = pd.DataFrame()
+        df_filter_vmaf = pd.DataFrame()
+        df_vmaf = pd.DataFrame()
 
         path = each_dir
         each_dir_up = list_dir_up[i]
+
+        each_dir_filter_vmaf = list_dir_filter_vmaf[i]
+        each_dir_vmaf = list_dir_vdsr_vmaf[i]
 
         for each_qp in list_qp:
 
@@ -81,10 +105,32 @@ if __name__ == '__main__':
                 list_txt = sorted(glob.glob(os.path.join(each_sub_dir, down_filename)))
 
                 for each_txt in list_txt:
-                    each_stat = stat_hevc(each_txt, 'name_qp_frm')
+                    each_stat = stat_hevc(each_txt)
 
                     each_frame_table = each_stat.get_frame_table()
                     df_down = df_down.append(each_frame_table)
+
+            #==== VMAF : filter
+            target_path = os.path.join(each_dir_filter_vmaf, each_qp)
+            list_sub_dir = sorted(glob.glob(target_path))
+            for each_sub_dir in list_sub_dir:
+                list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "*.json")))
+                for each_txt in list_txt:
+                    each_stat = stat_vmaf(each_txt)
+
+                    each_frame_table = each_stat.get_frame_table()
+                    df_filter_vmaf = df_filter_vmaf.append(each_frame_table)
+
+            #==== VMAF : VDSR
+            target_path = os.path.join(each_dir_vmaf, each_qp)
+            list_sub_dir = sorted(glob.glob(target_path))
+            for each_sub_dir in list_sub_dir:
+                list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "*.json")))
+                for each_txt in list_txt:
+                    each_stat = stat_vmaf(each_txt)
+
+                    each_frame_table = each_stat.get_frame_table()
+                    df_vmaf = df_vmaf.append(each_frame_table)
 
         # ========== up-sampled PSNR ========== #
         #target_path = os.path.join(each_dir_up, up_dir_name, each_qp)
@@ -112,6 +158,14 @@ if __name__ == '__main__':
         #df_down[['psnr_y_up', 'ssim_up']] = df_down[['psnr_y_up', 'ssim_up']].astype(float)
         df_down[['psnr_y']] = df_down[['psnr_y']].astype(float)
 
+        #========== Merge ==========#
+        #merge_basis =['loop', 'name', 'qp', 'frm']
+        merge_on = ['name', 'qp', 'frm']
+
+        # merge with VMAF-filter
+        df_down = pd.merge(df_down, df_filter_vmaf, on=merge_on, how='outer', suffixes=['', '_filter_vmaf'])
+        df_down.rename(columns={'VMAF':'VMAF_filter'}, inplace=True)
+
         ## to_file
         filename_down = os.path.join(out_dir, 'df_down.txt')
         df_down.to_csv(filename_down, sep=' ')
@@ -131,16 +185,14 @@ if __name__ == '__main__':
         filename_merged = os.path.join(out_dir, 'df_down_video_avg.txt')
         df_video_level.to_csv(filename_merged, sep=' ')
 
+
         # check empty of df_up
         if df_up.empty == True:
             continue
 
         # merge
-        df_merged = pd.merge(df_down, df_up, on='id', how='outer')
-        #print(df_merged)
-
-        df_merged = df_merged[['loop', 'name_x', 'frm_x', 'qp_x', 'bitrate', 'psnr_y_up_bicubic', 'ssim_up_bicubic', 'psnr_y_up', 'ssim_up', 'epoch']]
-        df_merged.columns = ['loop', 'name', 'frm', 'qp', 'bitrate', 'psnr_y_up_bicubic', 'ssim_up_bicubic', 'psnr_y_up', 'ssim_up', 'epoch']
+        #df_merged = pd.merge(df_down, df_up, on='id', how='outer')
+        df_merged = pd.merge(df_down, df_up, on=merge_on, how='outer', suffixes=['', '_up'])
         df_merged = df_merged.sort_values(['loop', 'name', 'epoch', 'frm', 'qp'])
 
         # drop the row which has null value.
@@ -149,15 +201,12 @@ if __name__ == '__main__':
         # drop duplicate rows
         df_merged = df_merged.drop_duplicates()
 
-        #df_merged.to_csv(r'/home/kkheon/VCNN-Tensorflow/data_vsr/val/df_merged.txt', header=None, index=None, sep=' ')
+        # merge with VMAF
+        df_merged = pd.merge(df_merged, df_vmaf, on=merge_on, how='outer', suffixes=['', '_vmaf'])
 
         filename_merged = os.path.join(out_dir, 'df_raw.txt')
         #df_merged.to_csv(filename_merged, header=None, index=None, sep=' ')
         df_merged.to_csv(filename_merged, index=None, sep=' ')
-
-        # type change
-        df_merged[['psnr_y_up', 'ssim_up']] = df_merged[['psnr_y_up', 'ssim_up']].astype(float)
-        df_merged[['psnr_y_up_bicubic', 'ssim_up_bicubic']] = df_merged[['psnr_y_up_bicubic', 'ssim_up_bicubic']].astype(float)
 
         # frame-level average
         df_frame_level = df_merged.groupby(['loop', 'epoch', 'frm', 'qp']).mean()

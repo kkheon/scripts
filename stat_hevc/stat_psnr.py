@@ -5,7 +5,7 @@ import numpy as np
 
 class stat_psnr(object):
 
-    def __init__(self, filename, id_type=None):
+    def __init__(self, filename):
 
         self.parse_filename(filename)
         self.parse_psnr(filename)
@@ -13,14 +13,6 @@ class stat_psnr(object):
         # gen id : video + qp
         self.df_frame['name'] = self.video_name
         self.df_frame['qp'] = self.qp
-
-        # add id to table
-        # 
-        if id_type == 'name_qp_frm':
-            self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-        else:
-            self.df_frame['id'] = 'loop_'+ str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-            #self.df_frame['id'] = 'loop_'+ str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_2'
 
     def get_frame_table(self):
         return self.df_frame

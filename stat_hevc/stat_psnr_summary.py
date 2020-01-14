@@ -15,14 +15,6 @@ class stat_psnr_summary(object):
         self.df_frame['qp'] = self.qp
         self.df_frame['epoch'] = self.epoch
 
-        # add id to table
-        #
-        if id_type == 'name_qp_frm':
-            self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-        else:
-            self.df_frame['id'] = 'loop_'+ str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-            #self.df_frame['id'] = 'loop_'+ str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_2'
-
     def get_frame_table(self):
         return self.df_frame
 
@@ -82,6 +74,10 @@ class stat_psnr_summary(object):
 
         # add column name
         self.df_frame.columns = ['name', 'frm', 'psnr_y_up_bicubic', 'ssim_up_bicubic', 'psnr_y_up', 'ssim_up']
+        # type change
+        self.df_frame[['psnr_y_up_bicubic', 'ssim_up_bicubic', 'psnr_y_up', 'ssim_up']] = self.df_frame[['psnr_y_up_bicubic', 'ssim_up_bicubic', 'psnr_y_up', 'ssim_up']].astype(float)
+        #self.df_frame['frm'] = self.df_frame['frm'].astype(int)
+
 
 
 

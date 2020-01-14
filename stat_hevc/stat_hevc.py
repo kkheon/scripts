@@ -5,7 +5,7 @@ import numpy as np
 
 class stat_hevc(object):
 
-    def __init__(self, filename, id_type=None):
+    def __init__(self, filename):
 
         self.parse_filename(filename)
         self.parse_result(filename)
@@ -27,14 +27,6 @@ class stat_hevc(object):
 
         self.df_summary['name'] = self.video_name
         self.df_summary['qp'] = self.qp
-
-        # add id to table
-        if id_type == 'name_qp_frm':
-            self.df_frame['id'] = self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-            self.df_summary['id'] = self.df_summary['name'] + '_QP' + self.df_summary['qp']
-        else:
-            self.df_frame['id'] = 'loop_' + str(self.loop_idx) + '_' + self.df_frame['name'] + '_QP' + self.df_frame['qp'] + '_frm_' + self.df_frame['frm']
-            self.df_summary['id'] = 'loop_' + str(self.loop_idx) + '_' + self.df_summary['name'] + '_QP' + self.df_summary['qp']
 
         # add loop to table
         self.df_frame['loop'] = self.loop_idx
@@ -128,6 +120,7 @@ class stat_hevc(object):
 
         # type change
         self.df_frame['bits'] = self.df_frame['bits'].astype(float)
+        #self.df_frame['frm'] = self.df_frame['frm'].astype(int)
 
         # add bitrate
         self.df_frame['bitrate'] = self.df_frame['bits'] * self.fps / 1000
