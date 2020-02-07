@@ -6,17 +6,57 @@
 $WIDTH  = "3840";
 $HEIGHT = "2160";
 
+#@QP = (
+#  "22",
+#  "27",
+#  "32",
+#  "37",
+#  "42",
+#  "47",
+#);
+
 @QP = (
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+  "17",
+  "18",
+  "19",
+  "20",
+  "21",
   "22",
+  "23",
+  "24",
+  "25",
+  "26",
   "27",
+  "28",
+  "29",
+  "30",
+  "31",
   "32",
+  "33",
+  "34",
+  "35",
+  "36",
   "37",
+  "38",
+  "39",
+  "40",
+  "41",
   "42",
+  "43",
+  "44",
+  "45",
+  "46",
   "47",
 );
 
 # Lable Path
-$DIR_LABEL = "/data/kkheon/dataset/SJTU_4K_test/label";
+#$DIR_LABEL = "/data/kkheon/dataset/SJTU_4K_test/label";
+$DIR_LABEL = "/data/kkheon/dataset/ultra_video_group/label";
 
 # Target Path 
 @DIR_TARGET = (
@@ -24,8 +64,13 @@ $DIR_LABEL = "/data/kkheon/dataset/SJTU_4K_test/label";
   #"/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_720_hm/lanczos_720_to_2160",
   #"/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm/lanczos_544_to_2160",
   #"/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_1080/result_vdsr_1_conv_3x3/",
-  "/mnt/octopus/data_vsr_bak/test_SJTU/lanczos_2160_to_720/result_vdsr_1_conv_3x3/",
+  #"/mnt/octopus/data_vsr_bak/test_SJTU/lanczos_2160_to_720/result_vdsr_1_conv_3x3/",
   #"/mnt/octopus/data_vsr_bak/test_SJTU/lanczos_2160_to_544/result_vdsr_1_conv_3x3/",
+
+  #"/data/kkheon/data_vsr_bak/test_ultra/lanczos_2160_to_1080/result_vdsr_1_conv_3x3/",
+
+  "/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_720/result_vdsr_1_conv_3x3/",
+  #"/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_544/result_vdsr_1_conv_3x3/",
 );
 
 # epoch

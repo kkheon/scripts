@@ -106,8 +106,8 @@ if __name__ == '__main__':
     #out_w = 1920
 
     #
-    #n_frame = 5
-    n_frame = 60
+    n_frame = 5
+    #n_frame = 60
     start_frame = 0
 
     ## to get label frame#2
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     #output_path = '/hdd2T/kkheon/test_images/ClassB_chopped'
     #output_path = input_path + '_chopped'
     #output_path = input_path + '_chopped_frm' + str(start_frame)
-    output_path = input_path + '_chopped_from' + str(start_frame) + '_n' + str(n_frame)
+    output_path = input_path + '_chopped_from_' + str(start_frame) + '_n_' + str(n_frame)
 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -155,6 +155,8 @@ if __name__ == '__main__':
         input_name, _ = input_name.split('.', 1)
         #output_name = input_name + '_' + str(out_w) + 'x' + str(out_h) + '.yuv'
         output_name = input_name + '.yuv'
+
+        output_name = re.sub('_[0-9]+x[0-9]+','',output_name) 
         each_output = os.path.join(output_path, output_name)
 
         chop_yuv420(each_input, in_w, in_h, each_output, out_w, out_h, n_frame, start_frame)

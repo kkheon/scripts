@@ -32,6 +32,10 @@ class stat_hevc(object):
         self.df_frame['loop'] = self.loop_idx
         self.df_summary['loop'] = self.loop_idx
 
+        # add resolution to table (just height)
+        self.df_frame['resolution'] = self.resolution
+        self.df_summary['resolution'] = self.resolution
+
     def get_frame_table(self):
         return self.df_frame
 
@@ -78,6 +82,7 @@ class stat_hevc(object):
 
                     if 'Real     Format' in each_line:
                         list_numbers= re.findall('[.0-9]+', each_line)
+                        self.resolution = int(list_numbers[1])
                         self.fps = int(list_numbers[2])
 
 

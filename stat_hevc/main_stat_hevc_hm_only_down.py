@@ -10,43 +10,124 @@ from stat_hevc import stat_hevc
 from stat_psnr_summary import stat_psnr_summary as stat_psnr
 from stat_vmaf import stat_vmaf
 
+from stat_plot import plot_step_vmaf
+
 
 if __name__ == '__main__':
 
     list_dir = [
-        '/data/kkheon/dataset/SJTU_4K_test/label_hm',
+        #'/data/kkheon/dataset/SJTU_4K_test/label_hm',
         #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_1080_hm',
         #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_720_hm',
         #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm',
+
+        #'/data/kkheon/dataset/ultra_video_group/label_hm',
+        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_1440_hm',
+        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_1080_hm',
+        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_720_hm',
+        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_544_hm',
+        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_360_hm',
+
+        '/data/kkheon/dataset/ultra_video_group/label_hm_5frm',
+        '/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_1080_hm_5frm',
+        '/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_720_hm_5frm',
+        '/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_544_hm_5frm',
     ]
 
     list_dir_up = [
         '',
+        '/data/kkheon/data_vsr_bak/test_ultra/lanczos_2160_to_1080',
+        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_720',
+        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_544',
+
         #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_1080',
         #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_720',
         #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_544',
+        '',
+        '',
+        '',
+        '',
+        '',
     ]
     list_qp = [
+        #'QP22',
+        #'QP27',
+        #'QP32',
+        #'QP37',
+        #'QP42',
+        #'QP47',
+
+        'QP12',
+        'QP13',
+        'QP14',
+        'QP15',
+        'QP16',
+        'QP17',
+        'QP18',
+        'QP19',
+
+        'QP20',
+        'QP21',
         'QP22',
+        'QP23',
+        'QP24',
+        'QP25',
+        'QP26',
         'QP27',
+        'QP28',
+        'QP29',
+
+        'QP30',
+        'QP31',
         'QP32',
+        'QP33',
+        'QP34',
+        'QP35',
+        'QP36',
         'QP37',
+        'QP38',
+        'QP39',
+
+        'QP40',
+        'QP41',
         'QP42',
+        'QP43',
+        'QP44',
+        'QP45',
+        'QP46',
         'QP47',
     ]
 
     # json file dir
     list_dir_filter_vmaf = [
-        '/home/kkheon/vmaf_test/SJTU_4K_test_vmaf',
+        #'/home/kkheon/vmaf_test/SJTU_4K_test_vmaf',
         #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_1080_to_2160_vmaf',
         #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_720_to_2160_vmaf',
         #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_544_to_2160_vmaf',
+
+        #'/home/kkheon/scripts/vmaf_test/label_hm_vmaf',
+        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1440_hm_lanczos_1440_to_2160_vmaf',
+        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1080_hm_lanczos_1080_to_2160_vmaf',
+        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_720_hm_lanczos_720_to_2160_vmaf',
+        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_544_hm_lanczos_544_to_2160_vmaf',
+        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_360_hm_lanczos_360_to_2160_vmaf',
+
+        '/home/kkheon/scripts/vmaf_test/label_hm_5frm_vmaf',
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1080_hm_5frm_lanczos_1080_to_2160_vmaf',
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_720_hm_5frm_lanczos_720_to_2160_vmaf',
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_544_hm_5frm_lanczos_544_to_2160_vmaf',
     ]
     list_dir_vdsr_vmaf = [
         '',
-        #'/home/kkheon/vmaf_test/lanczos_2160_to_1080_vmaf',
-        #'/home/kkheon/vmaf_test/lanczos_2160_to_720_vmaf',
-        #'/home/kkheon/vmaf_test/lanczos_2160_to_544_vmaf',
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1080_vmaf',
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_720_vmaf',
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_544_vmaf',
+
+        '',
+        '',
+        '',
+        '',
+        '',
     ]
 
     #
@@ -77,6 +158,8 @@ if __name__ == '__main__':
         # file : ... just average file. not for each file.
         up_dir_name = 'result_mf_vcnn_up_*/QP*'
         up_filename = "psnr_*" + ".txt"
+
+    df_total = pd.DataFrame()
 
     for i, each_dir in enumerate(list_dir):
         df_down = pd.DataFrame()
@@ -179,7 +262,7 @@ if __name__ == '__main__':
         df_frame_level.to_csv(filename_down, sep=' ')
 
         # video-level average
-        df_video_level = df_down.groupby(['name', 'qp']).mean()
+        df_video_level = df_down.groupby(['name', 'qp'], as_index=False).mean()
 
         # to_file
         filename_merged = os.path.join(out_dir, 'df_down_video_avg.txt')
@@ -188,6 +271,10 @@ if __name__ == '__main__':
 
         # check empty of df_up
         if df_up.empty == True:
+            # === making df_total
+            # append to df_total
+            df_total = df_total.append(df_video_level)
+
             continue
 
         # merge
@@ -216,11 +303,14 @@ if __name__ == '__main__':
         df_frame_level.to_csv(filename_merged, sep=' ')
 
         # video-level average
-        df_video_level = df_merged.groupby(['loop', 'epoch', 'name', 'qp']).mean()
+        df_video_level = df_merged.groupby(['loop', 'epoch', 'name', 'qp'], as_index=False).mean()
 
         # to_file
         filename_merged = os.path.join(out_dir, 'df_video_avg.txt')
         df_video_level.to_csv(filename_merged, sep=' ')
+
+        # append to df_total
+        df_total = df_total.append(df_video_level)
 
         # qp-level average
         df_qp_level = df_merged.groupby(['loop', 'epoch', 'qp']).mean()
@@ -229,5 +319,16 @@ if __name__ == '__main__':
         filename_merged = os.path.join(out_dir, 'df_qp_avg.txt')
         df_qp_level.to_csv(filename_merged, sep=' ')
 
+
+    # plot bitrate ladder
+    out_dir = './'
+    out_filename = os.path.join(out_dir, 'df_total.txt')
+    df_total.to_csv(out_filename, sep=' ')
+    plot_step_vmaf(out_dir, df_total)
+
+
+    #=== build bitrate ladder ===#
+    # Step 1 : decide target bitrate based on VMAF
+    # Setp 2 : select best resolution and QP for each target.
 
 
