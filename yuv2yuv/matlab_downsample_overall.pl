@@ -10,9 +10,9 @@
 #  "/hdd2T/kkheon/dataset/myanmar_v1/downsampled_lanczos_1080/train"
 
 #  "/data/kkheon/dataset/myanmar_v1/orig/scenes_yuv/train"
-  #"/data/kkheon/dataset/myanmar_v1/orig/scenes_yuv/val",
+  "/data/kkheon/dataset/myanmar_v1/orig/scenes_yuv/val",
   #"/data/kkheon/dataset/SJTU_4K_test/label",
-  "/data/kkheon/dataset/ultra_video_group/label",
+  #"/data/kkheon/dataset/ultra_video_group/label",
 );
 
 #$YUV2YUV_FUNC = "yuv2yuv";
@@ -32,6 +32,19 @@ $H = 2160;
 #$W = 4096;
 #$H = 2160;
 
+@TARGET_RESOLUTION = (
+  #"2560x1440", 
+  "1920x1080", 
+  "1280x720", 
+  #"1024x576", 
+  #"960x544", 
+  #"768x432", 
+  #"640x360", 
+  #"512x288", 
+  #"320x180", 
+  #"256x144", 
+);
+
 foreach $DIR (@DIRS){   
 
     opendir D, $DIR or die "Could not open dir: $!\n";
@@ -43,55 +56,16 @@ foreach $DIR (@DIRS){
         my @INPUT_STRING= split /\./, $INPUT;
         my $IMAGE_NAME = $INPUT_STRING[0];
 
-        $W_SCALED = 2560;
-        $H_SCALED = 1440;
-        $OUT_DIR = "$DIR/$FILTER_NAME\_$H\_to_$H_SCALED";
-        system "mkdir -p $OUT_DIR";
-        print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
-        system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
-       
-        $W_SCALED = 1920;
-        $H_SCALED = 1080;
-        $OUT_DIR = "$DIR/$FILTER_NAME\_$H\_to_$H_SCALED";
-        system "mkdir -p $OUT_DIR";
-        print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
-        system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
+        foreach $TARGET_RESOLUTION (@TARGET_RESOLUTION) {
+            my @WxH= split /x/, $TARGET_RESOLUTION;
+            my $W_SCALED = $WxH[0];
+            my $H_SCALED = $WxH[1];
 
-        $W_SCALED = 1280;
-        $H_SCALED = 720;
-        $OUT_DIR = "$DIR/$FILTER_NAME\_$H\_to_$H_SCALED";
-        system "mkdir -p $OUT_DIR";
-        print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
-        system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
-
-        $W_SCALED = 1024;
-        $H_SCALED = 576;
-        $OUT_DIR = "$DIR/$FILTER_NAME\_$H\_to_$H_SCALED";
-        system "mkdir -p $OUT_DIR";
-        print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
-        system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
-
-        $W_SCALED = 960;
-        $H_SCALED = 544;
-        $OUT_DIR = "$DIR/$FILTER_NAME\_$H\_to_$H_SCALED";
-        system "mkdir -p $OUT_DIR";
-        print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
-        system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
-
-        $W_SCALED = 640;
-        $H_SCALED = 360;
-        $OUT_DIR = "$DIR/$FILTER_NAME\_$H\_to_$H_SCALED";
-        system "mkdir -p $OUT_DIR";
-        print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
-        system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
-
-        $W_SCALED = 384;
-        $H_SCALED = 216;
-        $OUT_DIR = "$DIR/$FILTER_NAME\_$H\_to_$H_SCALED";
-        system "mkdir -p $OUT_DIR";
-        print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
-        system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
-
+            $OUT_DIR = "${DIR}_${FILTER_NAME}_${H}_to_${H_SCALED}";
+            system "mkdir -p $OUT_DIR";
+            print("matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"");
+            system "matlab -nodesktop -nosplash -r \"$YUV2YUV_FUNC('$DIR/$INPUT', $W, $H, '420', '$OUT_DIR/$IMAGE_NAME\_${W_SCALED}x${H_SCALED}.yuv', $W_SCALED, $H_SCALED, '420'); exit;\"";
+        }
     }
 }
 

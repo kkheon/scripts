@@ -5,6 +5,7 @@ import pandas as pd
 import re
 
 import json
+import pickle
 
 from stat_hevc import stat_hevc
 from stat_psnr_summary import stat_psnr_summary as stat_psnr
@@ -327,8 +328,9 @@ if __name__ == '__main__':
     plot_step_vmaf(out_dir, df_total)
 
 
-    #=== build bitrate ladder ===#
-    # Step 1 : decide target bitrate based on VMAF
-    # Setp 2 : select best resolution and QP for each target.
+    # save as pickle df_total
+    with open('df_total.pickle', 'wb') as f:
+        pickle.dump(df_total, f, pickle.HIGHEST_PROTOCOL)
 
+    #=== build bitrate ladder ===#
 
