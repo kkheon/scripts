@@ -30,6 +30,8 @@ class stat_vmaf(object):
         name = re.sub('result_', '', name)
         name = re.sub('rec_', '', name)
         name = re.sub('mf_vcnn_up_', '', name)
+        name = re.sub('VDSR_DOWN_', '', name)
+        name = re.sub('VDSR_', '', name)
         name = re.sub('_[0-9]+x[0-9]+', '', name)
         self.video_name = name
 

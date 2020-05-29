@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
 from yuv_tools import *
+import argparse
 
-def make_block_replacement():
+def make_block_replacement(target_video, target_y_idx):
 
     # set list of files. from label(?)
     DIR_ROOT = "/data/kkheon/dataset/SJTU_4K_test"
@@ -24,14 +25,17 @@ def make_block_replacement():
         "47",
     ]
 
-    # set list of test
-    list_video = [
-        "Campfire_Party",
-        "Fountains",
-        "Runners",
-        "Rush_Hour",
-        "Traffic_Flow",
-    ]
+    ## set list of test
+    #list_video = [
+    #    "Campfire_Party",
+    #    #"Fountains",
+    #    #"Runners",
+    #    #"Rush_Hour",
+    #    #"Traffic_Flow",
+    #]
+
+    list_video = [target_video]
+
     w = 3840
     h = 2160
     n_frame = 5
@@ -56,10 +60,18 @@ def make_block_replacement():
         list_bench_sse_u = calculate_sse_frame(n_frame, video_bench_uv[:, :, :, 0], video_label_uv[:, :, :, 0])
         list_bench_sse_v = calculate_sse_frame(n_frame, video_bench_uv[:, :, :, 1], video_label_uv[:, :, :, 1])
 
-        n_sample = 5
-        list_y_idx = np.random.choice(range(0, h-block_size_h+1, block_size_h), n_sample)
-        list_x_idx = np.random.choice(range(0, w-block_size_w+1, block_size_w), n_sample)
+        # all index 
+        #list_y_idx = range(0, h-block_size_h+1, block_size_h)
+        list_x_idx = range(0, w-block_size_w+1, block_size_w)
 
+        list_y_idx = [target_y_idx]
+
+        ## random sampling
+        #n_sample = 5
+        #list_y_idx = np.random.choice(range(0, h-block_size_h+1, block_size_h), n_sample)
+        #list_x_idx = np.random.choice(range(0, w-block_size_w+1, block_size_w), n_sample)
+
+        ## fixed sample
         #list_y_idx = [256]
         #list_x_idx = [576]
 
@@ -129,7 +141,13 @@ def make_block_replacement():
 
 
 def main():
-    make_block_replacement()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--video_name", type=str, help="Target Video Name []")
+    parser.add_argument("--y", type=int, help="Y index")
+    args = parser.parse_args()
+
+    make_block_replacement(args.video_name, args.y)
 
     return 0
 

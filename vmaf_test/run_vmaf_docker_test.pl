@@ -3,8 +3,8 @@
 #use warnings
 
 # ===== Settings ===== #
-$WIDTH  = "3840";
-$HEIGHT = "2160";
+$WIDTH  = 3840;
+$HEIGHT = 2160;
 
 #@QP = (
 #  "27",
@@ -16,6 +16,15 @@ $HEIGHT = "2160";
 
 # Target Path
 $DIR_ROOT = "/data/kkheon/dataset/SJTU_4K_test";
+@VIDEO_NAME = (
+    "Campfire_Party",
+    #"Fountains",
+    #"Runners",
+    #"Rush_Hour",
+    #"Traffic_Flow",
+);
+
+my @Y_INDEX = map 64*$_, 0 .. ($HEIGHT-64)/64;
 
 # Docker File Mount 
 $OPTION = "-v $DIR_ROOT:$DIR_ROOT"; 
@@ -34,30 +43,43 @@ system "mkdir -p $OUT_DIR";
 # ===== Loop ===== #
 #$DIR = "$DIR_ROOT/label";
 
-opendir D, $DIR or die "Could not open dir: $!\n";
-my @INPUT = grep(/[_0-9a-z]+.yuv/i, readdir D);
-
-#foreach $QP (@QP) 
+foreach $VIDEO_NAME (@VIDEO_NAME) 
 {
-    #print("==== QP$QP ====\n");
-    #system "mkdir -p $OUT_DIR/QP$QP";
+    foreach $Y_INDEX (@Y_INDEX) 
+    {
+        #print("==== QP$QP ====\n");
+        #system "mkdir -p $OUT_DIR/QP$QP";
 
-    foreach $INPUT (@INPUT) {
-        print("==== INPUT : $INPUT ====\n");
+        # Step 0 : clear previous yuv files
+        system "rm $DIR/*.yuv";
 
-        my @input_string = split /_frm/, $INPUT;
-        my $INPUT_NAME = $input_string[0];
+        # Step 1 : block replacement
+        print "python make_block_replacement.py --video_name $VIDEO_NAME --y $Y_INDEX\n";
+        system "python make_block_replacement.py --video_name $VIDEO_NAME --y $Y_INDEX";
 
-        $CFG = "$DIR_ROOT/label/$INPUT_NAME.yuv $DIR/$INPUT --out-fmt json";
-        print "$CMD $CFG\n";
-        system "$CMD $CFG | tee result.json";
+        # Step 2 : VMAF calculation 
+        opendir D, $DIR or die "Could not open dir: $!\n";
+        my @INPUT = grep(/[_0-9a-z]+.yuv/i, readdir D);
 
-        # ===== save result ===== #
-        my @input_string= split /\./, $INPUT;
-        my $IMAGE_NAME = $input_string[0];
-        #system "cat result.json      > $OUT_DIR/QP$QP/result_$IMAGE_NAME.json";
-        system "cat result.json      > $OUT_DIR/result_$IMAGE_NAME.json";
+        foreach $INPUT (@INPUT) {
+            print("==== INPUT : $INPUT ====\n");
+            my @input_string = split /_frm/, $INPUT;
+            my $INPUT_NAME = $input_string[0];
+
+            $CFG = "$DIR_ROOT/label/$INPUT_NAME.yuv $DIR/$INPUT --out-fmt json";
+            print "$CMD $CFG\n";
+            system "$CMD $CFG | tee result.json";
+
+            # ===== save result ===== #
+            my @input_string= split /\./, $INPUT;
+            my $IMAGE_NAME = $input_string[0];
+            #system "cat result.json      > $OUT_DIR/QP$QP/result_$IMAGE_NAME.json";
+            system "cat result.json      > $OUT_DIR/result_$IMAGE_NAME.json";
+        }
     }
+    # Step 3 : make stat data
+    print  "python stat_vmaf_sse.py\n";
+    system "python stat_vmaf_sse.py";
 }
 
 #===== To Telegram =====#

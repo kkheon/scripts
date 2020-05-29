@@ -12,111 +12,53 @@ from stat_psnr_summary import stat_psnr_summary as stat_psnr
 from stat_vmaf import stat_vmaf
 
 from stat_plot import plot_step_vmaf
+from stat_plot import plot_step_vmaf_target
 
 
 if __name__ == '__main__':
 
+    list_id = [
+        '2160',
+        'VDSR(1080)',
+        'VDSR(720)',
+        'VDSR(544)',
+        'CNN_DOWN(1080)',
+        'CNN_DOWN(720)',
+    ]
+
     list_dir = [
-        #'/data/kkheon/dataset/SJTU_4K_test/label_hm',
-        #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_1080_hm',
-        #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_720_hm',
-        #'/data/kkheon/dataset/SJTU_4K_test/lanczos_2160_to_544_hm',
-
-        #'/data/kkheon/dataset/ultra_video_group/label_hm',
-        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_1440_hm',
-        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_1080_hm',
-        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_720_hm',
-        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_544_hm',
-        #'/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_360_hm',
-
         '/data/kkheon/dataset/ultra_video_group/label_hm_5frm',
         '/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_1080_hm_5frm',
         '/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_720_hm_5frm',
         '/data/kkheon/dataset/ultra_video_group/lanczos_2160_to_544_hm_5frm',
+
+        '/data/kkheon/data_vsr_bak/test_ultra/lanczos_2160_to_1080/result_down_2_hm',
+        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_720/result_down_2_hm',
+
     ]
 
     list_dir_up = [
         '',
-        '/data/kkheon/data_vsr_bak/test_ultra/lanczos_2160_to_1080',
-        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_720',
-        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_544',
+        '/data/kkheon/data_vsr_bak/test_ultra/lanczos_2160_to_1080/result_vdsr_1_conv_3x3',
+        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_720/result_vdsr_1_conv_3x3',
+        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_544/result_vdsr_1_conv_3x3',
 
-        #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_1080',
-        #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_720',
-        #'/data/kkheon/data_vsr_bak/test_SJTU/lanczos_2160_to_544',
-        '',
-        '',
-        '',
-        '',
-        '',
+        '/data/kkheon/data_vsr_bak/test_ultra/lanczos_2160_to_1080/result_up_3',
+        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_720/result_up_3',
     ]
-    list_qp = [
-        #'QP22',
-        #'QP27',
-        #'QP32',
-        #'QP37',
-        #'QP42',
-        #'QP47',
 
-        'QP12',
-        'QP13',
-        'QP14',
-        'QP15',
-        'QP16',
-        'QP17',
-        'QP18',
-        'QP19',
-
-        'QP20',
-        'QP21',
-        'QP22',
-        'QP23',
-        'QP24',
-        'QP25',
-        'QP26',
-        'QP27',
-        'QP28',
-        'QP29',
-
-        'QP30',
-        'QP31',
-        'QP32',
-        'QP33',
-        'QP34',
-        'QP35',
-        'QP36',
-        'QP37',
-        'QP38',
-        'QP39',
-
-        'QP40',
-        'QP41',
-        'QP42',
-        'QP43',
-        'QP44',
-        'QP45',
-        'QP46',
-        'QP47',
-    ]
+    list_qp = range(12, 47, 1)
+    #list_qp = [22, 32]
 
     # json file dir
     list_dir_filter_vmaf = [
-        #'/home/kkheon/vmaf_test/SJTU_4K_test_vmaf',
-        #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_1080_to_2160_vmaf',
-        #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_720_to_2160_vmaf',
-        #'/home/kkheon/vmaf_test/result_vmaf_lanczos/lanczos_544_to_2160_vmaf',
-
-        #'/home/kkheon/scripts/vmaf_test/label_hm_vmaf',
-        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1440_hm_lanczos_1440_to_2160_vmaf',
-        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1080_hm_lanczos_1080_to_2160_vmaf',
-        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_720_hm_lanczos_720_to_2160_vmaf',
-        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_544_hm_lanczos_544_to_2160_vmaf',
-        #'/home/kkheon/scripts/vmaf_test/lanczos_2160_to_360_hm_lanczos_360_to_2160_vmaf',
-
         '/home/kkheon/scripts/vmaf_test/label_hm_5frm_vmaf',
         '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1080_hm_5frm_lanczos_1080_to_2160_vmaf',
         '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_720_hm_5frm_lanczos_720_to_2160_vmaf',
         '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_544_hm_5frm_lanczos_544_to_2160_vmaf',
+
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_1080_hm_5frm_lanczos_1080_to_2160_vmaf',
+        '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_720_hm_5frm_lanczos_720_to_2160_vmaf',
     ]
     list_dir_vdsr_vmaf = [
         '',
@@ -124,11 +66,8 @@ if __name__ == '__main__':
         '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_720_vmaf',
         '/home/kkheon/scripts/vmaf_test/lanczos_2160_to_544_vmaf',
 
-        '',
-        '',
-        '',
-        '',
-        '',
+        '/data/kkheon/data_vsr_bak/test_ultra/lanczos_2160_to_1080/result_up_3_vmaf',
+        '/mnt/octopus/data_vsr_bak/test_ultra/lanczos_2160_to_720/result_up_3_vmaf',
     ]
 
     #
@@ -145,7 +84,7 @@ if __name__ == '__main__':
         #up_filename = "psnr_*" + ".txt"
         up_filename = "vsr_pred_*" + ".txt"
     else:
-        #path_prefix = 'result_' + each_qp
+        #path_prefix = 'result_' + 'QP' + str(each_qp)
 
         # TODO : check if running
         # val_myanmar
@@ -169,6 +108,8 @@ if __name__ == '__main__':
         df_vmaf = pd.DataFrame()
 
         path = each_dir
+        each_id = list_id[i]
+
         each_dir_up = list_dir_up[i]
 
         each_dir_filter_vmaf = list_dir_filter_vmaf[i]
@@ -177,12 +118,12 @@ if __name__ == '__main__':
         for each_qp in list_qp:
 
             # ========== down-sampled bitrate ========== #
-            target_path = os.path.join(path, down_dir_name, each_qp)
+            target_path = os.path.join(path, down_dir_name, 'QP' + str(each_qp))
             list_sub_dir = sorted(glob.glob(target_path))
 
             # add bicubic down-sampled hevc result.
-            #target_path = os.path.join(each_dir, 'result_hm', each_qp)
-            target_path = os.path.join(each_dir, each_qp)
+            #target_path = os.path.join(each_dir, 'result_hm', 'QP' + str(each_qp))
+            target_path = os.path.join(each_dir, 'QP' + str(each_qp))
             list_sub_dir.append(target_path)
 
             for each_sub_dir in list_sub_dir:
@@ -195,7 +136,7 @@ if __name__ == '__main__':
                     df_down = df_down.append(each_frame_table)
 
             #==== VMAF : filter
-            target_path = os.path.join(each_dir_filter_vmaf, each_qp)
+            target_path = os.path.join(each_dir_filter_vmaf, 'QP' + str(each_qp))
             list_sub_dir = sorted(glob.glob(target_path))
             for each_sub_dir in list_sub_dir:
                 list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "*.json")))
@@ -206,7 +147,7 @@ if __name__ == '__main__':
                     df_filter_vmaf = df_filter_vmaf.append(each_frame_table)
 
             #==== VMAF : VDSR
-            target_path = os.path.join(each_dir_vmaf, each_qp)
+            target_path = os.path.join(each_dir_vmaf, 'QP' + str(each_qp))
             list_sub_dir = sorted(glob.glob(target_path))
             for each_sub_dir in list_sub_dir:
                 list_txt = sorted(glob.glob(os.path.join(each_sub_dir, "*.json")))
@@ -217,8 +158,9 @@ if __name__ == '__main__':
                     df_vmaf = df_vmaf.append(each_frame_table)
 
         # ========== up-sampled PSNR ========== #
-        #target_path = os.path.join(each_dir_up, up_dir_name, each_qp)
-        target_path = os.path.join(each_dir_up, up_dir_name)
+        #target_path = os.path.join(each_dir_up, up_dir_name, 'QP' + str(each_qp))
+        #target_path = os.path.join(each_dir_up, up_dir_name)
+        target_path = os.path.join(each_dir_up)
         list_sub_dir = sorted(glob.glob(target_path))
 
         if each_dir_up != '':
@@ -250,6 +192,9 @@ if __name__ == '__main__':
         df_down = pd.merge(df_down, df_filter_vmaf, on=merge_on, how='outer', suffixes=['', '_filter_vmaf'])
         df_down.rename(columns={'VMAF':'VMAF_filter'}, inplace=True)
 
+        # add 'id' to df_total
+        df_down['id'] = each_id
+
         ## to_file
         filename_down = os.path.join(out_dir, 'df_down.txt')
         df_down.to_csv(filename_down, sep=' ')
@@ -274,11 +219,13 @@ if __name__ == '__main__':
         if df_up.empty == True:
             # === making df_total
             # append to df_total
+            df_video_level['id'] = each_id
             df_total = df_total.append(df_video_level)
 
             continue
 
         # merge
+        #df_up['id'] = each_id
         #df_merged = pd.merge(df_down, df_up, on='id', how='outer')
         df_merged = pd.merge(df_down, df_up, on=merge_on, how='outer', suffixes=['', '_up'])
         df_merged = df_merged.sort_values(['loop', 'name', 'epoch', 'frm', 'qp'])
@@ -304,11 +251,15 @@ if __name__ == '__main__':
         df_frame_level.to_csv(filename_merged, sep=' ')
 
         # video-level average
-        df_video_level = df_merged.groupby(['loop', 'epoch', 'name', 'qp'], as_index=False).mean()
+        #df_video_level = df_merged.groupby(['loop', 'epoch', 'name', 'qp'], as_index=False).mean()
+        df_video_level = df_merged.groupby(['loop', 'name', 'qp', 'epoch'], as_index=False).mean()
 
         # to_file
         filename_merged = os.path.join(out_dir, 'df_video_avg.txt')
         df_video_level.to_csv(filename_merged, sep=' ')
+
+        # add 'id' to df_total
+        df_video_level['id'] = each_id
 
         # append to df_total
         df_total = df_total.append(df_video_level)
@@ -325,7 +276,8 @@ if __name__ == '__main__':
     out_dir = './'
     out_filename = os.path.join(out_dir, 'df_total.txt')
     df_total.to_csv(out_filename, sep=' ')
-    plot_step_vmaf(out_dir, df_total)
+    #plot_step_vmaf(out_dir, df_total)
+    plot_step_vmaf_target(out_dir, df_total, 'id')
 
 
     # save as pickle df_total

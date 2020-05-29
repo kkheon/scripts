@@ -69,6 +69,7 @@ class stat_hevc(object):
                         if 'vcnn_down_' in video_name:
                           _, video_name = video_name.split('vcnn_down_', 1)
 
+                        video_name = re.sub('VDSR_DOWN_', '', video_name)
                         video_name = re.sub('_[0-9]+x[0-9]+', '', video_name)
 
                         self.video_name = video_name
